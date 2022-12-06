@@ -10,5 +10,5 @@ mod day6;
 mod helpers;
 
 fn main() {
-    day6::solve_part1();
+    day6::solve_part2();
 }

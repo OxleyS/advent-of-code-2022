@@ -34,7 +34,7 @@ pub fn solve_part1() {
         return;
     }
 
-    // Check the remaining bytes
+    // Check the remaining characters
     for (i, b) in bytes[4..].iter().enumerate() {
         // Out with the previous character, in with the new one
         u = (u << 8) | (*b as u32);
@@ -43,4 +43,73 @@ pub fn solve_part1() {
             return;
         }
     }
+
+    unreachable!("Packet not found");
+}
+
+pub fn solve_part2() {
+    const MESSAGE_SIZE: usize = 14;
+    const ALPHA_SIZE: usize = 26;
+
+    // Guaranteed ASCII
+    let mut bytes = read_to_string("./input/day6input")
+        .expect("Could not open input file")
+        .into_bytes();
+
+    // There is an unwanted newline at the end
+    bytes.pop();
+
+    // All the characters are lowercase letters. This remaps them into the range [0, ALPHA_SIZE)
+    for b in bytes.iter_mut() {
+        *b -= 97;
+    }
+
+    let mut counts = [0u8; ALPHA_SIZE];
+    let mut num_duplicates = 0;
+    let mut message = [0u8; MESSAGE_SIZE];
+
+    // Initialize the counters with the first batch of characters
+    message.copy_from_slice(&bytes[0..MESSAGE_SIZE]);
+    for &b in message.iter() {
+        let count = &mut counts[b as usize];
+        *count += 1;
+        if *count == 2 {
+            num_duplicates += 1;
+        }
+    }
+
+    // Already done?
+    if num_duplicates == 0 {
+        println!("Message found starting at 0");
+        return;
+    }
+
+    // Check the remaining characters
+    for (i, &b) in bytes[MESSAGE_SIZE..].iter().enumerate() {
+        // We treat the message buffer as a ring buffer to avoid internal copying
+        let ring_idx = i % MESSAGE_SIZE;
+
+        // Decrement the character we're shifting out
+        let shifted_out = message[ring_idx];
+        let count = &mut counts[shifted_out as usize];
+        *count -= 1;
+        if *count == 1 {
+            num_duplicates -= 1;
+        }
+
+        // Increment the character we're shifting in
+        message[ring_idx] = b;
+        let count = &mut counts[b as usize];
+        *count += 1;
+        if *count == 2 {
+            num_duplicates += 1;
+        }
+
+        if num_duplicates == 0 {
+            println!("Message found starting at {}", i + MESSAGE_SIZE + 1);
+            return;
+        }
+    }
+
+    unreachable!("Message not found");
 }
