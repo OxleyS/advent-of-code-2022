@@ -12,5 +12,5 @@ mod day6;
 mod helpers;
 
 fn main() {
-    day6::solve_short();
+    day5::solve_short();
 }

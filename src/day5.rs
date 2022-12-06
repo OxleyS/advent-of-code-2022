@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use crate::helpers::iterate_file_lines;
 
 const NUM_STACKS: usize = 9;
@@ -93,4 +95,44 @@ pub fn solve_part2() {
 
     let message = collect_message(&crate_stacks);
     println!("The message is {message}");
+}
+
+fn solve_short_impl(multi_move: bool) -> String {
+    const EMPTY_VEC: Stack = Vec::new();
+    let input = read_to_string("./input/day5input").expect("Could not read input");
+    let (crate_layout, commands) = input.split_once("\n\n").expect("Could not split input");
+
+    let mut crate_stacks = [EMPTY_VEC; NUM_STACKS];
+    for line in crate_layout.lines().map(|l| l.chars().collect::<Vec<_>>()) {
+        for (i, chunk) in line.chunks(4).enumerate().filter(|(_, s)| s[0] == '[') {
+            crate_stacks[i].insert(0, chunk[1] as u8);
+        }
+    }
+
+    for line in commands.lines() {
+        let [number, from, to] = line
+            .splitn(6, ' ')
+            .skip(1)
+            .step_by(2)
+            .map(|s| s.parse::<usize>().expect("Could not parse number"))
+            .collect::<Vec<_>>()[..] else {
+                panic!("Expected 3-tuple");
+            };
+
+        let from_stack = &mut crate_stacks[from - 1];
+        let mut crates = from_stack
+            .drain((from_stack.len() - number)..)
+            .collect::<Vec<_>>();
+        if !multi_move {
+            crates.reverse();
+        }
+        crate_stacks[to - 1].extend(crates.into_iter());
+    }
+
+    collect_message(&crate_stacks)
+}
+
+pub fn solve_short() {
+    println!("Moved one at a time: {}", solve_short_impl(false));
+    println!("Moved multiple at a time: {}", solve_short_impl(true));
 }
