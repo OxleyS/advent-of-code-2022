@@ -1,4 +1,4 @@
-use std::fs::read_to_string;
+use std::{collections::HashSet, fs::read_to_string};
 
 pub fn solve_part1() {
     fn has_zero_byte(u: u32) -> bool {
@@ -112,4 +112,23 @@ pub fn solve_part2() {
     }
 
     unreachable!("Message not found");
+}
+
+fn solve_short_impl<const N: usize>() -> usize {
+    // Guaranteed ASCII
+    let bytes = read_to_string("./input/day6input")
+        .expect("Could not open input file")
+        .into_bytes();
+
+    for (i, window) in bytes.array_windows::<N>().enumerate() {
+        if HashSet::<u8>::from_iter((*window).into_iter()).len() == N {
+            return i;
+        }
+    }
+    unreachable!("Not found");
+}
+
+pub fn solve_short() {
+    println!("Packet found starting at {}", solve_short_impl::<4>());
+    println!("Message found starting at {}", solve_short_impl::<14>());
 }

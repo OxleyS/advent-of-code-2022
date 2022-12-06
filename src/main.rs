@@ -1,4 +1,6 @@
 #![feature(iter_array_chunks)]
+#![feature(get_many_mut)]
+#![feature(array_windows)]
 #![allow(dead_code)]
 
 mod day1;
@@ -10,5 +12,5 @@ mod day6;
 mod helpers;
 
 fn main() {
-    day6::solve_part2();
+    day6::solve_short();
 }

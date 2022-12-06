@@ -59,17 +59,6 @@ fn collect_message(crate_stacks: &StackSet) -> String {
         .collect::<String>()
 }
 
-fn double_index(crate_stacks: &mut StackSet, idx1: usize, idx2: usize) -> (&mut Stack, &mut Stack) {
-    // SAFETY: These two references do not alias as long as the two indices are different
-    assert_ne!(idx1, idx2);
-    unsafe {
-        (
-            &mut *(&mut crate_stacks[idx1] as *mut Stack),
-            &mut *(&mut crate_stacks[idx2] as *mut Stack),
-        )
-    }
-}
-
 pub fn solve_part1() {
     let mut lines = iterate_file_lines("day5input");
     let mut crate_stacks = parse_crate_stacks(&mut lines);
@@ -77,9 +66,9 @@ pub fn solve_part1() {
     lines.next(); // Skip a line
     for line in lines {
         let mv = parse_move_line(&line);
-
-        // Unnecessary, but more fun than a pop-push loop!
-        let (src, dest) = double_index(&mut crate_stacks, mv.src_stack, mv.dest_stack);
+        let [src, dest] = crate_stacks
+            .get_many_mut([mv.src_stack, mv.dest_stack])
+            .expect("Bad stack indices");
         let src_iter = src.drain((src.len() - mv.number)..).rev();
         dest.extend(src_iter);
     }
@@ -95,9 +84,9 @@ pub fn solve_part2() {
     lines.next(); // Skip a line
     for line in lines {
         let mv = parse_move_line(&line);
-
-        // Unnecessary, but more fun than a pop-push loop!
-        let (src, dest) = double_index(&mut crate_stacks, mv.src_stack, mv.dest_stack);
+        let [src, dest] = crate_stacks
+            .get_many_mut([mv.src_stack, mv.dest_stack])
+            .expect("Bad stack indices");
         let src_iter = src.drain((src.len() - mv.number)..);
         dest.extend(src_iter);
     }
