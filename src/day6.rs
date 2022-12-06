@@ -1,11 +1,15 @@
 use std::{collections::HashSet, fs::read_to_string};
 
 pub fn solve_part1() {
-    fn has_zero_byte(u: u32) -> bool {
+    // Returns nonzero if there was a zero byte, or zero otherwise.
+    // We don't convert to bool yet, for speed
+    #[inline(always)]
+    fn has_zero_byte(u: u32) -> u32 {
         // From https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
-        ((u.wrapping_sub(0x01010101u32)) & !u & 0x80808080u32) != 0
+        (u.wrapping_sub(0x01010101u32)) & !u & 0x80808080u32
     }
 
+    #[inline(always)]
     fn all_bytes_different(u: u32) -> bool {
         // We need to test each byte with each other byte. A fast way to do this is to XOR the bytes
         // against each other, and check for zero bytes (meaning there was a byte match).
@@ -13,7 +17,9 @@ pub fn solve_part1() {
         // two XORs to get them all
         let r1 = u.rotate_right(8);
         let r2 = u.rotate_right(16);
-        !has_zero_byte(u ^ r1) && !has_zero_byte(u ^ r2)
+
+        // Avoiding short-circuit semantics of && or || is faster
+        (has_zero_byte(u ^ r1) | has_zero_byte(u ^ r2)) == 0
     }
 
     fn print_result(u: u32, idx: usize) {
