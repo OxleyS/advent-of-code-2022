@@ -28,7 +28,7 @@ pub fn solve_part1() {
     }
 
     // Guaranteed ASCII
-    let bytes = read_to_string("./input/day6input")
+    let bytes = read_to_string("./input/day6input.txt")
         .expect("Could not open input file")
         .into_bytes();
 
@@ -58,7 +58,7 @@ pub fn solve_part2() {
     const ALPHA_SIZE: usize = 26;
 
     // Guaranteed ASCII
-    let mut bytes = read_to_string("./input/day6input")
+    let mut bytes = read_to_string("./input/day6input.txt")
         .expect("Could not open input file")
         .into_bytes();
 
@@ -122,7 +122,7 @@ pub fn solve_part2() {
 
 fn solve_short_impl<const N: usize>() -> usize {
     // Guaranteed ASCII
-    let bytes = read_to_string("./input/day6input")
+    let bytes = read_to_string("./input/day6input.txt")
         .expect("Could not open input file")
         .into_bytes();
 

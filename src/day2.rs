@@ -38,7 +38,7 @@ fn calc_points(my_choice: Choice, result: Result) -> usize {
 pub fn solve_part1() {
     let mut total = 0usize;
 
-    for line in iterate_file_lines("day2input") {
+    for line in iterate_file_lines("day2input.txt") {
         fn to_my_choice(c: char) -> Choice {
             match c {
                 'X' => Choice::Rock,
@@ -73,7 +73,7 @@ pub fn solve_part1() {
 pub fn solve_part2() {
     let mut total = 0usize;
 
-    for line in iterate_file_lines("day2input") {
+    for line in iterate_file_lines("day2input.txt") {
         fn to_my_result(c: char) -> Result {
             match c {
                 'X' => Result::Lost,

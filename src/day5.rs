@@ -62,7 +62,7 @@ fn collect_message(crate_stacks: &StackSet) -> String {
 }
 
 pub fn solve_part1() {
-    let mut lines = iterate_file_lines("day5input");
+    let mut lines = iterate_file_lines("day5input.txt");
     let mut crate_stacks = parse_crate_stacks(&mut lines);
 
     lines.next(); // Skip a line
@@ -80,7 +80,7 @@ pub fn solve_part1() {
 }
 
 pub fn solve_part2() {
-    let mut lines = iterate_file_lines("day5input");
+    let mut lines = iterate_file_lines("day5input.txt");
     let mut crate_stacks = parse_crate_stacks(&mut lines);
 
     lines.next(); // Skip a line
@@ -99,7 +99,7 @@ pub fn solve_part2() {
 
 fn solve_short_impl(multi_move: bool) -> String {
     const EMPTY_VEC: Stack = Vec::new();
-    let input = read_to_string("./input/day5input").expect("Could not read input");
+    let input = read_to_string("./input/day5input.txt").expect("Could not read input");
     let (crate_layout, commands) = input.split_once("\n\n").expect("Could not split input");
 
     let mut crate_stacks = [EMPTY_VEC; NUM_STACKS];

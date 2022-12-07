@@ -10,7 +10,7 @@ fn get_priority(c: u8) -> usize {
 pub fn solve_part1() {
     let mut total = 0usize;
 
-    for line in iterate_file_lines("day3input") {
+    for line in iterate_file_lines("day3input.txt") {
         // We know it's ASCII
         let half_point = line.len() / 2;
         let (first_comp, second_comp) =
@@ -31,7 +31,7 @@ pub fn solve_part1() {
 pub fn solve_part2() {
     let mut total = 0usize;
 
-    for [l1, l2, l3] in iterate_file_lines("day3input").array_chunks::<3>() {
+    for [l1, l2, l3] in iterate_file_lines("day3input.txt").array_chunks::<3>() {
         // We know it's ASCII
         let (b1, b2, b3) = (l1.as_bytes(), l2.as_bytes(), l3.as_bytes());
 

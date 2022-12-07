@@ -29,7 +29,7 @@ fn has_overlap(a: Range, b: Range) -> bool {
 pub fn solve_part1() {
     let mut num_contained = 0;
 
-    for line in iterate_file_lines("day4input") {
+    for line in iterate_file_lines("day4input.txt") {
         let (a_str, b_str) = line.split_once(',').expect("Malformed line");
         let (a_range, b_range) = (parse_range(a_str), parse_range(b_str));
 
@@ -44,7 +44,7 @@ pub fn solve_part1() {
 pub fn solve_part2() {
     let mut num_contained = 0;
 
-    for line in iterate_file_lines("day4input") {
+    for line in iterate_file_lines("day4input.txt") {
         let (a_str, b_str) = line.split_once(',').expect("Malformed line");
         let (a_range, b_range) = (parse_range(a_str), parse_range(b_str));
 
