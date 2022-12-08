@@ -42,6 +42,38 @@ fn change_directory(directory_tree: &[Directory], cur_idx: usize, dir_name: &str
     }
 }
 
+fn list_directory(
+    directory_tree: &mut Vec<Directory>,
+    cur_idx: usize,
+    lines: &mut impl Iterator<Item = String>,
+) -> String {
+    loop {
+        let cur_line = lines.next().unwrap_or_default();
+        if cur_line.is_empty() || cur_line.starts_with("$ ") {
+            return cur_line;
+        }
+
+        let (file_tag, file_name) = cur_line.split_once(' ').expect("Malformed ls line");
+        match file_tag {
+            "dir" => {
+                let child_idx = directory_tree.len();
+                directory_tree.push(Directory {
+                    name: file_name.to_string(),
+                    local_file_total: 0,
+                    subtree_file_total: 0,
+                    parent: cur_idx,
+                    child_dirs: vec![],
+                });
+                directory_tree[cur_idx].child_dirs.push(child_idx);
+            }
+            file_size => {
+                directory_tree[cur_idx].local_file_total +=
+                    file_size.parse::<usize>().expect("Invalid file size");
+            }
+        }
+    }
+}
+
 fn traverse_command_history() -> Vec<Directory> {
     let mut lines = iterate_file_lines("day7input.txt");
 
@@ -66,32 +98,9 @@ fn traverse_command_history() -> Vec<Directory> {
                 cur_directory = change_directory(&directory_tree, cur_directory, dir_name);
                 command = lines.next().expect("Unexpected EOF");
             }
-            "ls" => loop {
-                let cur_line = lines.next().unwrap_or_default();
-                if cur_line.is_empty() || cur_line.starts_with("$ ") {
-                    command = cur_line;
-                    break;
-                }
-
-                let (file_tag, file_name) = cur_line.split_once(' ').expect("Malformed ls line");
-                match file_tag {
-                    "dir" => {
-                        let child_idx = directory_tree.len();
-                        directory_tree.push(Directory {
-                            name: file_name.to_string(),
-                            local_file_total: 0,
-                            subtree_file_total: 0,
-                            parent: cur_directory,
-                            child_dirs: vec![],
-                        });
-                        directory_tree[cur_directory].child_dirs.push(child_idx);
-                    }
-                    file_size => {
-                        directory_tree[cur_directory].local_file_total +=
-                            file_size.parse::<usize>().expect("Invalid file size");
-                    }
-                }
-            },
+            "ls" => {
+                command = list_directory(&mut directory_tree, cur_directory, &mut lines);
+            }
             _ => panic!("Unknown command"),
         }
     }
