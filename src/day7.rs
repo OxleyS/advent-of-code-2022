@@ -30,6 +30,18 @@ fn fill_subtree_sizes(directory_tree: &mut [Directory]) {
     recurse(directory_tree, 0, 0);
 }
 
+fn change_directory(directory_tree: &[Directory], cur_idx: usize, dir_name: &str) -> usize {
+    match dir_name {
+        "/" => 0,
+        ".." => directory_tree[cur_idx].parent,
+        _ => *directory_tree[cur_idx]
+            .child_dirs
+            .iter()
+            .find(|&&idx| directory_tree[idx].name == dir_name)
+            .expect("Unknown subdirectory"),
+    }
+}
+
 fn traverse_command_history() -> Vec<Directory> {
     let mut lines = iterate_file_lines("day7input.txt");
 
@@ -51,21 +63,7 @@ fn traverse_command_history() -> Vec<Directory> {
         match cmd_type {
             "cd" => {
                 let dir_name = &cmd_rest[1..];
-                match dir_name {
-                    "/" => {
-                        cur_directory = 0;
-                    }
-                    ".." => {
-                        cur_directory = directory_tree[cur_directory].parent;
-                    }
-                    _ => {
-                        cur_directory = *directory_tree[cur_directory]
-                            .child_dirs
-                            .iter()
-                            .find(|&&idx| directory_tree[idx].name == dir_name)
-                            .expect("Unknown subdirectory")
-                    }
-                }
+                cur_directory = change_directory(&directory_tree, cur_directory, dir_name);
                 command = lines.next().expect("Unexpected EOF");
             }
             "ls" => loop {
