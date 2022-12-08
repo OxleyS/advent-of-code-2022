@@ -2,9 +2,32 @@ use crate::helpers::iterate_file_lines;
 
 struct Directory {
     name: String,
-    self_file_total: usize,
+    local_file_total: usize,
+    subtree_file_total: usize,
     parent: usize,
     child_dirs: Vec<usize>,
+}
+
+fn fill_subtree_sizes(directory_tree: &mut [Directory]) {
+    fn recurse(directory_tree: &mut [Directory], cur_idx: usize, offset: usize) -> usize {
+        // Children are always further in the slice than their parents. We can avoid double-borrow
+        // by splitting up the slice just after the parent
+        let offset_idx = cur_idx - offset;
+        let child_offset = cur_idx + 1;
+        let (left, right) = directory_tree[offset_idx..].split_at_mut(1);
+
+        let cur_dir = &mut left[0];
+        let child_sum: usize = cur_dir
+            .child_dirs
+            .iter()
+            .map(|&child| recurse(right, child, child_offset))
+            .sum();
+
+        cur_dir.subtree_file_total = cur_dir.local_file_total + child_sum;
+        cur_dir.subtree_file_total
+    }
+
+    recurse(directory_tree, 0, 0);
 }
 
 fn traverse_command_history() -> Vec<Directory> {
@@ -13,7 +36,8 @@ fn traverse_command_history() -> Vec<Directory> {
     // Populate the root directory immediately
     let mut directory_tree = vec![Directory {
         name: "/".to_string(),
-        self_file_total: 0,
+        local_file_total: 0,
+        subtree_file_total: 0,
         parent: 0,
         child_dirs: Vec::new(),
     }];
@@ -57,14 +81,15 @@ fn traverse_command_history() -> Vec<Directory> {
                         let child_idx = directory_tree.len();
                         directory_tree.push(Directory {
                             name: file_name.to_string(),
-                            self_file_total: 0,
+                            local_file_total: 0,
+                            subtree_file_total: 0,
                             parent: cur_directory,
                             child_dirs: vec![],
                         });
                         directory_tree[cur_directory].child_dirs.push(child_idx);
                     }
                     file_size => {
-                        directory_tree[cur_directory].self_file_total +=
+                        directory_tree[cur_directory].local_file_total +=
                             file_size.parse::<usize>().expect("Invalid file size");
                     }
                 }
@@ -73,33 +98,65 @@ fn traverse_command_history() -> Vec<Directory> {
         }
     }
 
+    // Now traverse the tree and calculate subtree total sizes
+    fill_subtree_sizes(&mut directory_tree);
+
     directory_tree
 }
 
 fn sum_small_sizes(directory_tree: &[Directory]) -> usize {
-    fn recurse(directory_tree: &[Directory], cur_idx: usize) -> (usize, usize) {
+    fn recurse(directory_tree: &[Directory], cur_idx: usize) -> usize {
         let cur_dir = &directory_tree[cur_idx];
-        let (child_size, child_sum) = cur_dir
+        let child_sum = cur_dir
             .child_dirs
             .iter()
             .map(|&child| recurse(directory_tree, child))
-            .fold((0, 0), |accum, elem| (accum.0 + elem.0, accum.1 + elem.1));
+            .sum();
 
-        // Track the sum separately, because small dirs containing small dirs need to double-count
-        let total_size = cur_dir.self_file_total + child_size;
-        let total_small_sum = if total_size <= 100000 {
-            child_sum + total_size
+        // Small dirs containing small dirs need to double-count
+        if cur_dir.subtree_file_total <= 100000 {
+            child_sum + cur_dir.subtree_file_total
         } else {
             child_sum
-        };
-
-        (total_size, total_small_sum)
+        }
     }
 
-    recurse(directory_tree, 0).1
+    recurse(directory_tree, 0)
 }
 
-pub fn solve_part1() {
+fn find_deletion_candidate_size(directory_tree: &[Directory]) -> usize {
+    const TOTAL_AVAILABLE_SPACE: usize = 70000000;
+    const NEEDED_SPACE: usize = 30000000;
+    let left_to_free =
+        NEEDED_SPACE - (TOTAL_AVAILABLE_SPACE - directory_tree[0].subtree_file_total);
+
+    fn recurse(directory_tree: &[Directory], cur_idx: usize, target: usize) -> Option<usize> {
+        let cur_dir = &directory_tree[cur_idx];
+
+        let local = if cur_dir.subtree_file_total > target {
+            Some(cur_dir.subtree_file_total)
+        } else {
+            None
+        };
+
+        cur_dir
+            .child_dirs
+            .iter()
+            .map(|&child| recurse(directory_tree, child, target))
+            .chain([local])
+            .fold(None, |accum: Option<usize>, size| {
+                accum.into_iter().chain(size).min()
+            })
+    }
+
+    recurse(directory_tree, 0, left_to_free).expect("No suitable directory")
+}
+
+pub fn solve() {
     let directory_tree = traverse_command_history();
     println!("Sum is {}", sum_small_sizes(&directory_tree));
+    println!(
+        "Smallest deletion is {}",
+        find_deletion_candidate_size(&directory_tree)
+    );
 }
