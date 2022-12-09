@@ -8,12 +8,10 @@ struct Coord {
     y: i32,
 }
 
-pub fn solve() {
-    let mut head = Coord { x: 0, y: 0 };
-    let mut tail = head;
-
+fn solve_impl<const N: usize>() -> usize {
+    let mut knots = [Coord { x: 0, y: 0 }; N];
     let mut visited: HashSet<Coord> = HashSet::new();
-    visited.insert(tail);
+    visited.insert(knots[N - 1]); // Be sure to include initial position!
 
     for line in iterate_file_lines("day9input.txt") {
         let (direction, num_steps) = line.split_once(' ').expect("Malformed line");
@@ -29,25 +27,34 @@ pub fn solve() {
         };
 
         for _ in 0..num_steps {
-            head.x += move_amt.0;
-            head.y += move_amt.1;
+            knots[0].x += move_amt.0;
+            knots[0].y += move_amt.1;
 
-            let delta = Coord {
-                x: head.x - tail.x,
-                y: head.y - tail.y,
-            };
+            for i in 0..(N - 1) {
+                let [front, back] = knots.get_many_mut([i, i + 1]).unwrap();
 
-            // No need to move?
-            if delta.x.abs() < 2 && delta.y.abs() < 2 {
-                continue;
+                let delta = Coord {
+                    x: front.x - back.x,
+                    y: front.y - back.y,
+                };
+
+                // No need to move?
+                if delta.x.abs() < 2 && delta.y.abs() < 2 {
+                    continue;
+                }
+
+                back.x += delta.x.signum();
+                back.y += delta.y.signum();
             }
 
-            tail.x += delta.x.signum();
-            tail.y += delta.y.signum();
-
-            visited.insert(tail);
+            visited.insert(knots[N - 1]);
         }
     }
 
-    println!("Places visited: {}", visited.len());
+    visited.len()
+}
+
+pub fn solve() {
+    println!("Visited by 2 knots: {}", solve_impl::<2>());
+    println!("Visited by 10 knots: {}", solve_impl::<10>());
 }
