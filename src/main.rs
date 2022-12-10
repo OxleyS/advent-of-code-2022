@@ -5,6 +5,7 @@
 #![allow(dead_code)]
 
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -16,5 +17,5 @@ mod day9;
 mod helpers;
 
 fn main() {
-    day9::solve();
+    day10::solve();
 }
