@@ -12,12 +12,7 @@ struct State {
 
 impl State {
     fn new() -> Self {
-        Self {
-            reg: 1,
-            cycle: 0,
-            sum: 0,
-            screen: [[false; SCREEN_WIDTH]; SCREEN_HEIGHT],
-        }
+        Self { reg: 1, cycle: 0, sum: 0, screen: [[false; SCREEN_WIDTH]; SCREEN_HEIGHT] }
     }
 
     fn do_noop(&mut self) {
@@ -61,11 +56,10 @@ pub fn solve() {
 
     println!("Sum is {}", state.sum);
     println!("Screen contents:");
-    let screen_lines = state.screen.iter().map(|row| {
-        row.iter()
-            .map(|&lit| if lit { '#' } else { '.' })
-            .collect::<String>()
-    });
+    let screen_lines = state
+        .screen
+        .iter()
+        .map(|row| row.iter().map(|&lit| if lit { '#' } else { '.' }).collect::<String>());
     for line in screen_lines {
         println!("{line}");
     }

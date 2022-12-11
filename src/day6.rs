@@ -28,9 +28,8 @@ pub fn solve_part1() {
     }
 
     // Guaranteed ASCII
-    let bytes = read_to_string("./input/day6input.txt")
-        .expect("Could not open input file")
-        .into_bytes();
+    let bytes =
+        read_to_string("./input/day6input.txt").expect("Could not open input file").into_bytes();
 
     // We pack each of the four characters we test into a u32, for quick testing.
     // Special-case check the first four, for loop simplicity
@@ -58,9 +57,8 @@ pub fn solve_part2() {
     const ALPHA_SIZE: usize = 26;
 
     // Guaranteed ASCII
-    let mut bytes = read_to_string("./input/day6input.txt")
-        .expect("Could not open input file")
-        .into_bytes();
+    let mut bytes =
+        read_to_string("./input/day6input.txt").expect("Could not open input file").into_bytes();
 
     // There is an unwanted newline at the end
     bytes.pop();
@@ -122,9 +120,8 @@ pub fn solve_part2() {
 
 fn solve_short_impl<const N: usize>() -> usize {
     // Guaranteed ASCII
-    let bytes = read_to_string("./input/day6input.txt")
-        .expect("Could not open input file")
-        .into_bytes();
+    let bytes =
+        read_to_string("./input/day6input.txt").expect("Could not open input file").into_bytes();
 
     for (i, window) in bytes.array_windows::<N>().enumerate() {
         if HashSet::<u8>::from_iter((*window).into_iter()).len() == N {

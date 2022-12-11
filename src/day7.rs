@@ -17,11 +17,8 @@ fn fill_subtree_sizes(directory_tree: &mut [Directory]) {
         let (left, right) = directory_tree[offset_idx..].split_at_mut(1);
 
         let cur_dir = &mut left[0];
-        let child_sum: usize = cur_dir
-            .child_dirs
-            .iter()
-            .map(|&child| recurse(right, child, child_offset))
-            .sum();
+        let child_sum: usize =
+            cur_dir.child_dirs.iter().map(|&child| recurse(right, child, child_offset)).sum();
 
         cur_dir.subtree_file_total = cur_dir.local_file_total + child_sum;
         cur_dir.subtree_file_total
@@ -114,11 +111,8 @@ fn traverse_command_history() -> Vec<Directory> {
 fn sum_small_sizes(directory_tree: &[Directory]) -> usize {
     fn recurse(directory_tree: &[Directory], cur_idx: usize) -> usize {
         let cur_dir = &directory_tree[cur_idx];
-        let child_sum = cur_dir
-            .child_dirs
-            .iter()
-            .map(|&child| recurse(directory_tree, child))
-            .sum();
+        let child_sum =
+            cur_dir.child_dirs.iter().map(|&child| recurse(directory_tree, child)).sum();
 
         // Small dirs containing small dirs need to double-count
         if cur_dir.subtree_file_total <= 100000 {
@@ -151,9 +145,7 @@ fn find_deletion_candidate_size(directory_tree: &[Directory]) -> usize {
             .iter()
             .map(|&child| recurse(directory_tree, child, target))
             .chain([local])
-            .fold(None, |accum: Option<usize>, size| {
-                accum.into_iter().chain(size).min()
-            })
+            .fold(None, |accum: Option<usize>, size| accum.into_iter().chain(size).min())
     }
 
     recurse(directory_tree, 0, left_to_free).expect("No suitable directory")
@@ -162,8 +154,5 @@ fn find_deletion_candidate_size(directory_tree: &[Directory]) -> usize {
 pub fn solve() {
     let directory_tree = traverse_command_history();
     println!("Sum is {}", sum_small_sizes(&directory_tree));
-    println!(
-        "Smallest deletion is {}",
-        find_deletion_candidate_size(&directory_tree)
-    );
+    println!("Smallest deletion is {}", find_deletion_candidate_size(&directory_tree));
 }

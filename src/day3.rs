@@ -17,10 +17,8 @@ pub fn solve_part1() {
             (line[..half_point].as_bytes(), line[half_point..].as_bytes());
 
         // We know there's exactly one match
-        let common = *first_comp
-            .iter()
-            .find(|b| second_comp.contains(b))
-            .expect("Should have been a match");
+        let common =
+            *first_comp.iter().find(|b| second_comp.contains(b)).expect("Should have been a match");
 
         total += get_priority(common);
     }

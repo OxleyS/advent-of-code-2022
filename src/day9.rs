@@ -34,10 +34,7 @@ fn solve_impl<const N: usize>() -> usize {
             for i in 0..(N - 1) {
                 let [front, back] = knots.get_many_mut([i, i + 1]).unwrap();
 
-                let delta = Coord {
-                    x: front.x - back.x,
-                    y: front.y - back.y,
-                };
+                let delta = Coord { x: front.x - back.x, y: front.y - back.y };
 
                 // No need to move?
                 if delta.x.abs() < 2 && delta.y.abs() < 2 {

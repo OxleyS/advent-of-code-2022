@@ -8,10 +8,7 @@ struct Range {
 
 fn parse_range(s: &str) -> Range {
     let (a, b) = s.split_once('-').expect("Malformed pair");
-    Range {
-        start: a.parse().expect("Malformed A"),
-        end: b.parse().expect("Malformed B"),
-    }
+    Range { start: a.parse().expect("Malformed A"), end: b.parse().expect("Malformed B") }
 }
 
 fn has_containment(a: Range, b: Range) -> bool {

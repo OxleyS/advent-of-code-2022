@@ -41,9 +41,7 @@ fn parse_crate_stacks<S: AsRef<str>>(lines: &mut impl Iterator<Item = S>) -> Sta
 
 fn parse_move_line(line: &str) -> Move {
     fn parse_one(iter: &mut std::str::SplitN<char>) -> usize {
-        iter.nth(1)
-            .and_then(|s| s.parse::<usize>().ok())
-            .expect("Malformed move line")
+        iter.nth(1).and_then(|s| s.parse::<usize>().ok()).expect("Malformed move line")
     }
 
     let mut substring_iter = line.splitn(6, ' ');
@@ -68,9 +66,8 @@ pub fn solve_part1() {
     lines.next(); // Skip a line
     for line in lines {
         let mv = parse_move_line(&line);
-        let [src, dest] = crate_stacks
-            .get_many_mut([mv.src_stack, mv.dest_stack])
-            .expect("Bad stack indices");
+        let [src, dest] =
+            crate_stacks.get_many_mut([mv.src_stack, mv.dest_stack]).expect("Bad stack indices");
         let src_iter = src.drain((src.len() - mv.number)..).rev();
         dest.extend(src_iter);
     }
@@ -86,9 +83,8 @@ pub fn solve_part2() {
     lines.next(); // Skip a line
     for line in lines {
         let mv = parse_move_line(&line);
-        let [src, dest] = crate_stacks
-            .get_many_mut([mv.src_stack, mv.dest_stack])
-            .expect("Bad stack indices");
+        let [src, dest] =
+            crate_stacks.get_many_mut([mv.src_stack, mv.dest_stack]).expect("Bad stack indices");
         let src_iter = src.drain((src.len() - mv.number)..);
         dest.extend(src_iter);
     }
@@ -120,9 +116,7 @@ fn solve_short_impl(multi_move: bool) -> String {
             };
 
         let from_stack = &mut crate_stacks[from - 1];
-        let mut crates = from_stack
-            .drain((from_stack.len() - number)..)
-            .collect::<Vec<_>>();
+        let mut crates = from_stack.drain((from_stack.len() - number)..).collect::<Vec<_>>();
         if !multi_move {
             crates.reverse();
         }

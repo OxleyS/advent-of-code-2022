@@ -35,8 +35,5 @@ pub fn solve_part2() {
         }
     }
 
-    println!(
-        "Largest calorie total is {}",
-        largest_three[0..3].iter().sum::<usize>()
-    );
+    println!("Largest calorie total is {}", largest_three[0..3].iter().sum::<usize>());
 }

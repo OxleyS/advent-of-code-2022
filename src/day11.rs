@@ -23,17 +23,13 @@ fn extract_line<T>(
     f: impl FnOnce(&str) -> T,
 ) -> T {
     let line = lines.next().expect("Unexpected EOF");
-    f(line
-        .trim_start()
-        .strip_prefix(prefix)
-        .expect("Expected prefix"))
+    let data = line.trim_start().strip_prefix(prefix).expect("Expected prefix");
+    f(data)
 }
 
 fn parse_monkey(lines: &mut impl Iterator<Item = String>) -> Monkey {
     let items: Vec<usize> = extract_line(lines, "Starting items: ", |data| {
-        data.split(", ")
-            .map(|s| s.parse::<usize>().expect("Malformed item list"))
-            .collect()
+        data.split(", ").map(|s| s.parse::<usize>().expect("Malformed item list")).collect()
     });
 
     let op: Operation = extract_line(lines, "Operation: new = old ", |data| {
@@ -58,14 +54,7 @@ fn parse_monkey(lines: &mut impl Iterator<Item = String>) -> Monkey {
         data.parse::<usize>().expect("Malformed target monkey")
     });
 
-    Monkey {
-        items,
-        op,
-        divis_test,
-        divis_target,
-        non_divis_target,
-        inspect_count: 0,
-    }
+    Monkey { items, op, divis_test, divis_target, non_divis_target, inspect_count: 0 }
 }
 
 fn solve_impl(rounds: usize, worry_decay_factor: usize) -> usize {
@@ -76,12 +65,14 @@ fn solve_impl(rounds: usize, worry_decay_factor: usize) -> usize {
         // "Monkey N:" or EOF
         if lines.next().is_none() {
             break;
-        };
+        }
 
         monkeys.push(parse_monkey(&mut lines));
         lines.next(); // Eat a blank line
     }
 
+    // This is a value that's divisible by every monkey's divisor. This acts as an upper bound
+    // on the worry value that preserves divisibility information
     let common_multiple: usize = monkeys.iter().map(|m| m.divis_test).product();
 
     for _ in 0..rounds {
@@ -118,12 +109,6 @@ fn solve_impl(rounds: usize, worry_decay_factor: usize) -> usize {
 }
 
 pub fn solve() {
-    println!(
-        "Amount of monkey business (with decay, 20 rounds): {}",
-        solve_impl(20, 3),
-    );
-    println!(
-        "Amount of monkey business (without decay, 10000 rounds): {}",
-        solve_impl(10000, 1),
-    );
+    println!("Amount of monkey business (with decay, 20 rounds): {}", solve_impl(20, 3),);
+    println!("Amount of monkey business (without decay, 10000 rounds): {}", solve_impl(10000, 1),);
 }
