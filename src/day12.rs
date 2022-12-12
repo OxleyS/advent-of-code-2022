@@ -37,6 +37,11 @@ impl PartialEq for PathNode {
 impl Eq for PathNode {}
 
 pub fn solve() {
+    const LOWEST_ELEVATION: u8 = 97; // 'a'
+    const HIGHEST_ELEVATION: u8 = 122; // 'z'
+    const START_MARKER: u8 = 83; // 'S'
+    const END_MARKER: u8 = 69; // 'E'
+
     // Read the file into a 1D grid of bytes, noting the width for indexing later
     let mut grid_width: Option<usize> = None;
     let mut elevations: Vec<u8> = iterate_file_lines("day12input.txt")
@@ -53,15 +58,29 @@ pub fn solve() {
         });
     let grid_width = grid_width.expect("File was empty");
 
-    let start_idx = elevations.iter().position(|&b| b == 83).expect("Missing start"); // 'S'
-    let end_idx = elevations.iter().position(|&b| b == 69).expect("Missing end"); // 'E'
-    elevations[start_idx] = 97; // 'a'
-    elevations[end_idx] = 122; // 'z'
+    let start_idx = elevations.iter().position(|&b| b == START_MARKER).expect("Missing start");
+    let end_idx = elevations.iter().position(|&b| b == END_MARKER).expect("Missing end");
+    elevations[start_idx] = LOWEST_ELEVATION;
+    elevations[end_idx] = HIGHEST_ELEVATION;
 
+    let all_lowest: Vec<usize> = elevations
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, b)| if *b == LOWEST_ELEVATION { Some(idx) } else { None })
+        .collect();
+
+    let grid: Vec<GridNode> = build_graph(&elevations, grid_width, end_idx);
+
+    let shortest_length =
+        find_shortest_path_length(&grid, start_idx, end_idx).expect("No possible path");
+    println!("Shortest path length from start is {shortest_length}");
+}
+
+fn build_graph(elevations: &[u8], grid_width: usize, end_idx: usize) -> Vec<GridNode> {
     let end_y = end_idx / grid_width;
     let end_x = end_idx - (end_y * grid_width);
 
-    let grid: Vec<GridNode> = elevations
+    elevations
         .iter()
         .enumerate()
         .map(|(idx, elevation)| {
@@ -96,8 +115,10 @@ pub fn solve() {
 
             GridNode { cost_estimate, edge_indices }
         })
-        .collect();
+        .collect()
+}
 
+fn find_shortest_path_length(grid: &[GridNode], start_idx: usize, end_idx: usize) -> Option<usize> {
     let initial_node = PathNode {
         grid_idx: start_idx,
         parent_idx: None,
@@ -108,8 +129,7 @@ pub fn solve() {
     let mut open_list = vec![initial_node];
     let mut close_list = Vec::new();
 
-    let mut shortest_length = None;
-    'astar: while !open_list.is_empty() {
+    while !open_list.is_empty() {
         let (cur_idx, node) =
             open_list.iter().enumerate().min_by_key(|&node| node.1.cost_estimate).unwrap();
         if node.grid_idx == end_idx {
@@ -124,8 +144,7 @@ pub fn solve() {
                     .map(|node| node.parent_idx)
                     .unwrap();
             }
-            shortest_length = Some(path_len);
-            break 'astar;
+            return Some(path_len);
         }
 
         let cur_node = node.clone();
@@ -165,5 +184,6 @@ pub fn solve() {
         }
     }
 
-    println!("Shortest length is {}", shortest_length.expect("No possible path"));
+    // No path exists
+    None
 }
