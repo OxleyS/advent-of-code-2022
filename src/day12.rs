@@ -1,4 +1,4 @@
-use std::collections::BinaryHeap;
+use std::collections::{BTreeMap, BinaryHeap, HashMap};
 
 use crate::helpers::iterate_file_lines;
 
@@ -12,11 +12,11 @@ struct AStarNode {}
 #[derive(Clone)]
 struct PathNode {
     grid_idx: usize,
-    parent_idx: Option<usize>,
-    shortest_distance: usize,
+    shortest_len: usize,
     cost_estimate: usize,
 }
 
+// TODO: Zap?
 impl Ord for PathNode {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // Compare in _reverse_ order, we want the smallest cost_estimate to win
@@ -121,65 +121,64 @@ fn build_graph(elevations: &[u8], grid_width: usize, end_idx: usize) -> Vec<Grid
 fn find_shortest_path_length(grid: &[GridNode], start_idx: usize, end_idx: usize) -> Option<usize> {
     let initial_node = PathNode {
         grid_idx: start_idx,
-        parent_idx: None,
-        shortest_distance: 0,
+        shortest_len: 0,
         cost_estimate: grid[start_idx].cost_estimate,
     };
 
-    let mut open_list = vec![initial_node];
-    let mut close_list = Vec::new();
+    let mut path_map = BTreeMap::from([(initial_node.cost_estimate, vec![0usize])]);
+    let mut path_nodes = vec![initial_node];
 
-    while !open_list.is_empty() {
-        let (cur_idx, node) =
-            open_list.iter().enumerate().min_by_key(|&node| node.1.cost_estimate).unwrap();
-        if node.grid_idx == end_idx {
-            let mut path_len = 0;
-            let mut traverse_idx = node.parent_idx;
-            while let Some(parent_idx) = traverse_idx.take() {
-                path_len += 1;
-                traverse_idx = open_list
-                    .iter()
-                    .chain(close_list.iter())
-                    .find(|node| node.grid_idx == parent_idx)
-                    .map(|node| node.parent_idx)
-                    .unwrap();
-            }
-            return Some(path_len);
+    let mut reverse_map = HashMap::new();
+    reverse_map.insert(start_idx, 0);
+
+    while let Some((cur_estimate, mut candidate_indices)) = path_map.pop_first() {
+        // TODO: A bit jank
+        let cur_path_idx = candidate_indices.pop().unwrap();
+        if !candidate_indices.is_empty() {
+            path_map.insert(cur_estimate, candidate_indices);
         }
 
-        let cur_node = node.clone();
-        close_list.push(node.clone());
-        open_list.remove(cur_idx);
+        let cur_path = path_nodes[cur_path_idx].clone();
+        if cur_path.grid_idx == end_idx {
+            return Some(cur_path.shortest_len);
+        }
 
-        let cur_grid = &grid[cur_node.grid_idx];
+        let cur_grid = &grid[cur_path.grid_idx];
         for &edge_idx in cur_grid.edge_indices.iter() {
+            if edge_idx == cur_path.grid_idx {
+                continue;
+            }
+
             let edge_grid = &grid[edge_idx];
             let new_estimate =
-                cur_node.cost_estimate + edge_grid.cost_estimate - cur_grid.cost_estimate + 1;
+                cur_path.cost_estimate + edge_grid.cost_estimate - cur_grid.cost_estimate + 1;
 
-            if let Some(open_idx) = open_list.iter().position(|node| node.grid_idx == edge_idx) {
-                let open_node = &mut open_list[open_idx];
-                if new_estimate < open_node.cost_estimate {
-                    open_node.cost_estimate = new_estimate;
-                    open_node.parent_idx = Some(cur_node.grid_idx);
-                }
-            } else if let Some(close_idx) =
-                close_list.iter().position(|node| node.grid_idx == edge_idx)
-            {
-                let close_node = &mut close_list[close_idx];
-                if new_estimate < close_node.cost_estimate {
-                    close_node.cost_estimate = new_estimate;
-                    close_node.parent_idx = Some(cur_node.grid_idx);
-                    open_list.push(close_node.clone());
-                    close_list.remove(close_idx);
-                }
-            } else {
-                open_list.push(PathNode {
-                    cost_estimate: new_estimate,
+            let edge_path_idx = *reverse_map.entry(edge_idx).or_insert_with(|| {
+                path_nodes.push(PathNode {
                     grid_idx: edge_idx,
-                    parent_idx: Some(cur_node.grid_idx),
-                    shortest_distance: 0,
-                })
+                    shortest_len: cur_path.shortest_len + 1,
+                    cost_estimate: new_estimate,
+                });
+                path_map.entry(new_estimate).or_default().push(path_nodes.len() - 1);
+                path_nodes.len() - 1
+            });
+
+            // TODO: More jank
+            let edge_path = &mut path_nodes[edge_path_idx];
+            if new_estimate < edge_path.cost_estimate {
+                if let Some(indices) = path_map.get_mut(&edge_path.cost_estimate) {
+                    let found_idx = indices.iter().position(|&idx| idx == edge_path_idx);
+                    if let Some(found_idx) = found_idx {
+                        indices.swap_remove(found_idx);
+                        if indices.is_empty() {
+                            path_map.remove(&edge_path.cost_estimate);
+                        }
+                    }
+                }
+
+                edge_path.shortest_len = cur_path.shortest_len + 1;
+                edge_path.cost_estimate = new_estimate;
+                path_map.entry(edge_path.cost_estimate).or_default().push(edge_path_idx);
             }
         }
     }
