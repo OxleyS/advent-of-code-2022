@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BinaryHeap, HashMap};
+use std::collections::{BTreeMap, HashMap};
 
 use crate::helpers::iterate_file_lines;
 
@@ -7,34 +7,12 @@ struct GridNode {
     edge_indices: Vec<usize>,
 }
 
-struct AStarNode {}
-
 #[derive(Clone)]
 struct PathNode {
     grid_idx: usize,
     shortest_len: usize,
     cost_estimate: usize,
 }
-
-// TODO: Zap?
-impl Ord for PathNode {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // Compare in _reverse_ order, we want the smallest cost_estimate to win
-        other.cost_estimate.cmp(&self.cost_estimate)
-    }
-}
-impl PartialOrd for PathNode {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for PathNode {
-    fn eq(&self, other: &Self) -> bool {
-        self.cost_estimate == other.cost_estimate
-    }
-}
-impl Eq for PathNode {}
 
 pub fn solve() {
     const LOWEST_ELEVATION: u8 = 97; // 'a'
@@ -74,6 +52,13 @@ pub fn solve() {
     let shortest_length =
         find_shortest_path_length(&grid, start_idx, end_idx).expect("No possible path");
     println!("Shortest path length from start is {shortest_length}");
+
+    let shortest_from_all_lowest = all_lowest
+        .iter()
+        .filter_map(|&start| find_shortest_path_length(&grid, start, end_idx))
+        .min()
+        .unwrap();
+    println!("Shortest path length from any lowest point is {shortest_from_all_lowest}");
 }
 
 fn build_graph(elevations: &[u8], grid_width: usize, end_idx: usize) -> Vec<GridNode> {
