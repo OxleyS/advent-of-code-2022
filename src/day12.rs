@@ -65,6 +65,8 @@ fn build_graph(elevations: &[u8], grid_width: usize, end_idx: usize) -> Vec<Grid
     let end_y = end_idx / grid_width;
     let end_x = end_idx - (end_y * grid_width);
 
+    // Smash the specific elevations into a graph with links between nodes based on their
+    // relative elevations. Also include an estimated distance to the goal
     elevations
         .iter()
         .enumerate()
@@ -103,6 +105,8 @@ fn build_graph(elevations: &[u8], grid_width: usize, end_idx: usize) -> Vec<Grid
         .collect()
 }
 
+// A (shoddy) implementation of A*. There's so many cross-references involved between path nodes and
+// grid nodes that choosing the right data structures to avoid brute-force search is very difficult
 fn find_shortest_path_length(grid: &[GridNode], start_idx: usize, end_idx: usize) -> Option<usize> {
     let initial_node = PathNode {
         grid_idx: start_idx,
@@ -110,34 +114,51 @@ fn find_shortest_path_length(grid: &[GridNode], start_idx: usize, end_idx: usize
         cost_estimate: grid[start_idx].cost_estimate,
     };
 
+    // A map where the key is the estimated distance to the goal, and the value is a list of path
+    // node indices that currently have that estimated distance.
+    // Normally you'd use a priority queue or min-heap, but the closest thing to that in the
+    // standard lib (`BinaryHeap`) does not have APIs supporting updates
     let mut path_map = BTreeMap::from([(initial_node.cost_estimate, vec![0usize])]);
+
+    // A simple array of every path node we've visited so far
     let mut path_nodes = vec![initial_node];
 
-    let mut reverse_map = HashMap::new();
-    reverse_map.insert(start_idx, 0);
+    // A mapping of grid node indices -> path node indices
+    let mut reverse_map = HashMap::from([(start_idx, 0)]);
 
+    // The min-key value in the path map will point us to the nodes with the smallest estimated
+    // distance
     while let Some((cur_estimate, mut candidate_indices)) = path_map.pop_first() {
-        // TODO: A bit jank
+        // TODO: A bit inefficient. Arbitrarily take out a node to process and put the rest back
         let cur_path_idx = candidate_indices.pop().unwrap();
         if !candidate_indices.is_empty() {
             path_map.insert(cur_estimate, candidate_indices);
         }
 
         let cur_path = path_nodes[cur_path_idx].clone();
+
+        // Reached our goal?
         if cur_path.grid_idx == end_idx {
             return Some(cur_path.shortest_len);
         }
 
+        // For all neighbors
         let cur_grid = &grid[cur_path.grid_idx];
         for &edge_idx in cur_grid.edge_indices.iter() {
+            // Exclude the current path node, such a path would never be shorter
             if edge_idx == cur_path.grid_idx {
                 continue;
             }
 
             let edge_grid = &grid[edge_idx];
-            let new_estimate =
-                cur_path.cost_estimate + edge_grid.cost_estimate - cur_grid.cost_estimate + 1;
 
+            // Apply the grid-level difference in cost estimate, plus the step it takes to travel
+            // to the edge node. Order of operations is important here to prevent unsigned overflow
+            let new_estimate =
+                cur_path.shortest_len + edge_grid.cost_estimate + 1 - cur_grid.cost_estimate;
+
+            // If the corresponding path node exists, get it, otherwise create one and add it to
+            // the path map
             let edge_path_idx = *reverse_map.entry(edge_idx).or_insert_with(|| {
                 path_nodes.push(PathNode {
                     grid_idx: edge_idx,
@@ -148,9 +169,11 @@ fn find_shortest_path_length(grid: &[GridNode], start_idx: usize, end_idx: usize
                 path_nodes.len() - 1
             });
 
-            // TODO: More jank
             let edge_path = &mut path_nodes[edge_path_idx];
+
+            // Is this path to the edge node shorter than any found so far?
             if new_estimate < edge_path.cost_estimate {
+                // TODO: More jank. Remove the node from its previous spot in the path map, if any
                 if let Some(indices) = path_map.get_mut(&edge_path.cost_estimate) {
                     let found_idx = indices.iter().position(|&idx| idx == edge_path_idx);
                     if let Some(found_idx) = found_idx {
@@ -161,6 +184,7 @@ fn find_shortest_path_length(grid: &[GridNode], start_idx: usize, end_idx: usize
                     }
                 }
 
+                // Update our estimates and the path map accordingly
                 edge_path.shortest_len = cur_path.shortest_len + 1;
                 edge_path.cost_estimate = new_estimate;
                 path_map.entry(edge_path.cost_estimate).or_default().push(edge_path_idx);
