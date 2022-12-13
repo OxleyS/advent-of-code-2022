@@ -9,15 +9,15 @@ enum PacketValue {
 }
 
 fn parse_packet_value(packet_str: &str) -> PacketValue {
-    if packet_str.starts_with('[') {
-        let inner = &packet_str[1..packet_str.len() - 1]; // Strip the outer brackets
+    match packet_str {
+        "[]" => PacketValue::List(vec![]),
+        packet_str if packet_str.starts_with('[') => {
+            // Strip the outer brackets
+            let inner = &packet_str[1..packet_str.len() - 1];
 
-        let list: Vec<PacketValue> = if inner.is_empty() {
-            vec![]
-        } else {
             // Make sure we don't hit commas of any nested lists
             let mut brace_level = 0;
-            inner
+            let list = inner
                 .split(|c| {
                     if c == '[' {
                         brace_level += 1;
@@ -27,12 +27,11 @@ fn parse_packet_value(packet_str: &str) -> PacketValue {
                     brace_level == 0 && c == ','
                 })
                 .map(parse_packet_value)
-                .collect()
-        };
+                .collect();
 
-        PacketValue::List(list)
-    } else {
-        PacketValue::Int(packet_str.parse::<usize>().expect("Malformed int packet value"))
+            PacketValue::List(list)
+        }
+        _ => PacketValue::Int(packet_str.parse::<usize>().expect("Malformed int packet value")),
     }
 }
 
@@ -68,32 +67,19 @@ impl PartialEq for PacketValue {
 }
 
 pub fn solve() {
+    let mut all_packets: Vec<PacketValue> = iterate_file_lines("day13input.txt")
+        .filter(|line| !line.is_empty())
+        .map(|line| parse_packet_value(&line))
+        .collect();
+
     let mut sum = 0;
-    let mut pair_idx = 1;
-    let mut all_packets = Vec::new();
-
-    let mut lines = iterate_file_lines("day13input.txt");
-    loop {
-        let Some(first_line) = lines.next() else {
-            // EOF
-            break;
-        };
-        let second_line = lines.next().expect("Unexpected EOF");
-
-        let first_packet = parse_packet_value(&first_line);
-        let second_packet = parse_packet_value(&second_line);
-
-        if first_packet <= second_packet {
-            sum += pair_idx;
+    for (i, [left, right]) in all_packets.iter().array_chunks().enumerate() {
+        if left <= right {
+            // Indexing starts from one in packet land
+            sum += i + 1;
         }
-        all_packets.push(first_packet);
-        all_packets.push(second_packet);
-
-        lines.next(); // Eat a blank line
-        pair_idx += 1;
     }
-
-    println!("Sum is {sum}");
+    println!("Sum of in-order pair indices is {sum}");
 
     all_packets.sort_unstable();
 
