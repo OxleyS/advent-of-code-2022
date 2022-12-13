@@ -1,3 +1,8 @@
-My solutions for Advent of Code 2022. Requires nightly Rust for now.
+My solutions for Advent of Code 2022. Requires nightly Rust.
+My challenge to myself with this was to make solutions that are idiomatic, run at least reasonably fast, and only use the standard library.
 
-I may come up with a better way to run different days' problems, but for now I just edit `main.rs` with the solution I want to run.
+To run Day 2's solution, for example:
+```
+cargo run -- 2
+```
+And so on for the other days. If the day number is omitted, it will run the latest day solved.
