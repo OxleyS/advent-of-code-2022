@@ -1,5 +1,5 @@
 My solutions for Advent of Code 2022. Requires nightly Rust.
-My challenge to myself with this was to make solutions that are idiomatic, run at least reasonably fast, and only use the standard library.
+My challenge to myself with this was to make solutions that are idiomatic Rust, run at least reasonably fast, and only use the standard library.
 
 To run Day 2's solution, for example:
 ```
