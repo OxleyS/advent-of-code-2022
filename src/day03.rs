@@ -1,5 +1,10 @@
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    solve_part1();
+    solve_part2();
+}
+
 fn get_priority(c: u8) -> usize {
     (match c {
         c if c >= 97 => c - 96, // Lowercase
@@ -7,10 +12,10 @@ fn get_priority(c: u8) -> usize {
     }) as usize
 }
 
-pub fn solve_part1() {
+fn solve_part1() {
     let mut total = 0usize;
 
-    for line in iterate_file_lines("day3input.txt") {
+    for line in iterate_file_lines("day03input.txt") {
         // We know it's ASCII
         let half_point = line.len() / 2;
         let (first_comp, second_comp) =
@@ -23,13 +28,13 @@ pub fn solve_part1() {
         total += get_priority(common);
     }
 
-    println!("Total is {total}");
+    println!("Part 1 total: {total}");
 }
 
-pub fn solve_part2() {
+fn solve_part2() {
     let mut total = 0usize;
 
-    for [l1, l2, l3] in iterate_file_lines("day3input.txt").array_chunks::<3>() {
+    for [l1, l2, l3] in iterate_file_lines("day03input.txt").array_chunks::<3>() {
         // We know it's ASCII
         let (b1, b2, b3) = (l1.as_bytes(), l2.as_bytes(), l3.as_bytes());
 
@@ -42,5 +47,5 @@ pub fn solve_part2() {
         total += get_priority(common);
     }
 
-    println!("Total is {total}");
+    println!("Part 2 total: {total}");
 }

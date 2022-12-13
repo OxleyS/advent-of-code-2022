@@ -1,5 +1,10 @@
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    solve_part1();
+    solve_part2();
+}
+
 #[derive(PartialEq, Eq)]
 enum Choice {
     Rock,
@@ -35,10 +40,10 @@ fn calc_points(my_choice: Choice, result: Result) -> usize {
     me_points + result_points
 }
 
-pub fn solve_part1() {
+fn solve_part1() {
     let mut total = 0usize;
 
-    for line in iterate_file_lines("day2input.txt") {
+    for line in iterate_file_lines("day02input.txt") {
         fn to_my_choice(c: char) -> Choice {
             match c {
                 'X' => Choice::Rock,
@@ -67,13 +72,13 @@ pub fn solve_part1() {
         total += calc_points(my_choice, result);
     }
 
-    println!("Total points {total}");
+    println!("Part 1 total points: {total}");
 }
 
-pub fn solve_part2() {
+fn solve_part2() {
     let mut total = 0usize;
 
-    for line in iterate_file_lines("day2input.txt") {
+    for line in iterate_file_lines("day02input.txt") {
         fn to_my_result(c: char) -> Result {
             match c {
                 'X' => Result::Lost,
@@ -100,5 +105,5 @@ pub fn solve_part2() {
         total += calc_points(my_choice, result);
     }
 
-    println!("Total points {total}");
+    println!("Part 2 total points: {total}");
 }

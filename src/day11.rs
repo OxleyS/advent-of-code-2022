@@ -1,5 +1,10 @@
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    println!("Amount of monkey business (with decay, 20 rounds): {}", solve_impl(20, 3),);
+    println!("Amount of monkey business (without decay, 10000 rounds): {}", solve_impl(10000, 1),);
+}
+
 #[derive(Debug)]
 enum Operation {
     Add(usize),
@@ -106,9 +111,4 @@ fn solve_impl(rounds: usize, worry_decay_factor: usize) -> usize {
     top_counts.reverse();
 
     top_counts[0] * top_counts[1]
-}
-
-pub fn solve() {
-    println!("Amount of monkey business (with decay, 20 rounds): {}", solve_impl(20, 3),);
-    println!("Amount of monkey business (without decay, 10000 rounds): {}", solve_impl(10000, 1),);
 }

@@ -2,6 +2,37 @@ use std::cmp::Ordering;
 
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    let mut all_packets: Vec<PacketValue> = iterate_file_lines("day13input.txt")
+        .filter(|line| !line.is_empty())
+        .map(|line| parse_packet_value(&line))
+        .collect();
+
+    let mut sum = 0;
+    for (i, [left, right]) in all_packets.iter().array_chunks().enumerate() {
+        if left <= right {
+            // Indexing starts from one in packet land
+            sum += i + 1;
+        }
+    }
+    println!("Sum of in-order pair indices is {sum}");
+
+    all_packets.sort_unstable();
+
+    // Indexing starts from one in packet land
+    let first_divider = PacketValue::List(vec![PacketValue::Int(2)]);
+    let first_divider_idx = all_packets.partition_point(|p| p < &first_divider) + 1;
+
+    // The expectation is that the first divider is actually inserted into the packet list.
+    // This would have the effect of bumping the index of all later packets, so the second divider
+    // also needs one extra
+    let second_divider = PacketValue::List(vec![PacketValue::Int(6)]);
+    let second_divider_idx = all_packets.partition_point(|p| p < &second_divider) + 2;
+
+    let decoder_key = first_divider_idx * second_divider_idx;
+    println!("Decoder key is {decoder_key}");
+}
+
 #[derive(Debug)]
 enum PacketValue {
     Int(usize),
@@ -64,35 +95,4 @@ impl PartialEq for PacketValue {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other).is_eq()
     }
-}
-
-pub fn solve() {
-    let mut all_packets: Vec<PacketValue> = iterate_file_lines("day13input.txt")
-        .filter(|line| !line.is_empty())
-        .map(|line| parse_packet_value(&line))
-        .collect();
-
-    let mut sum = 0;
-    for (i, [left, right]) in all_packets.iter().array_chunks().enumerate() {
-        if left <= right {
-            // Indexing starts from one in packet land
-            sum += i + 1;
-        }
-    }
-    println!("Sum of in-order pair indices is {sum}");
-
-    all_packets.sort_unstable();
-
-    // Indexing starts from one in packet land
-    let first_divider = PacketValue::List(vec![PacketValue::Int(2)]);
-    let first_divider_idx = all_packets.partition_point(|p| p < &first_divider) + 1;
-
-    // The expectation is that the first divider is actually inserted into the packet list.
-    // This would have the effect of bumping the index of all later packets, so the second divider
-    // also needs one extra
-    let second_divider = PacketValue::List(vec![PacketValue::Int(6)]);
-    let second_divider_idx = all_packets.partition_point(|p| p < &second_divider) + 2;
-
-    let decoder_key = first_divider_idx * second_divider_idx;
-    println!("Decoder key is {decoder_key}");
 }

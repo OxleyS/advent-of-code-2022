@@ -1,6 +1,16 @@
 use std::{collections::HashSet, fs::read_to_string};
 
-pub fn solve_part1() {
+pub fn solve() {
+    println!("Packet found starting at {}", solve_part1());
+    println!("Message found starting at {}", solve_part2());
+}
+
+pub fn solve_short() {
+    println!("Packet found starting at {}", solve_short_impl::<4>());
+    println!("Message found starting at {}", solve_short_impl::<14>());
+}
+
+fn solve_part1() -> usize {
     // Returns nonzero if there was a zero byte, or zero otherwise.
     // We don't convert to bool yet, for speed
     #[inline(always)]
@@ -22,21 +32,19 @@ pub fn solve_part1() {
         (has_zero_byte(u ^ r1) | has_zero_byte(u ^ r2)) == 0
     }
 
-    fn print_result(u: u32, idx: usize) {
-        let s: String = u.to_ne_bytes().iter().map(|&c| c as char).collect();
-        println!("Found {s} at index {idx}");
+    fn print_result(idx: usize) {
+        println!("Packet found starting at {idx}");
     }
 
     // Guaranteed ASCII
     let bytes =
-        read_to_string("./input/day6input.txt").expect("Could not open input file").into_bytes();
+        read_to_string("./input/day06input.txt").expect("Could not open input file").into_bytes();
 
     // We pack each of the four characters we test into a u32, for quick testing.
     // Special-case check the first four, for loop simplicity
     let mut u = u32::from_ne_bytes(bytes[0..4].try_into().expect("Input not long enough"));
     if all_bytes_different(u) {
-        print_result(u, 0);
-        return;
+        return 0;
     }
 
     // Check the remaining characters
@@ -44,21 +52,20 @@ pub fn solve_part1() {
         // Out with the previous character, in with the new one
         u = (u << 8) | (*b as u32);
         if all_bytes_different(u) {
-            print_result(u, i + 5);
-            return;
+            return i + 5;
         }
     }
 
     unreachable!("Packet not found");
 }
 
-pub fn solve_part2() {
+fn solve_part2() -> usize {
     const MESSAGE_SIZE: usize = 14;
     const ALPHA_SIZE: usize = 26;
 
     // Guaranteed ASCII
     let mut bytes =
-        read_to_string("./input/day6input.txt").expect("Could not open input file").into_bytes();
+        read_to_string("./input/day06input.txt").expect("Could not open input file").into_bytes();
 
     // There is an unwanted newline at the end
     bytes.pop();
@@ -84,8 +91,7 @@ pub fn solve_part2() {
 
     // Already done?
     if num_duplicates == 0 {
-        println!("Message found starting at 0");
-        return;
+        return 0;
     }
 
     // Check the remaining characters
@@ -110,8 +116,7 @@ pub fn solve_part2() {
         }
 
         if num_duplicates == 0 {
-            println!("Message found starting at {}", i + MESSAGE_SIZE + 1);
-            return;
+            return i + MESSAGE_SIZE + 1;
         }
     }
 
@@ -121,7 +126,7 @@ pub fn solve_part2() {
 fn solve_short_impl<const N: usize>() -> usize {
     // Guaranteed ASCII
     let bytes =
-        read_to_string("./input/day6input.txt").expect("Could not open input file").into_bytes();
+        read_to_string("./input/day06input.txt").expect("Could not open input file").into_bytes();
 
     for (i, window) in bytes.array_windows::<N>().enumerate() {
         if HashSet::<u8>::from_iter((*window).into_iter()).len() == N {
@@ -129,9 +134,4 @@ fn solve_short_impl<const N: usize>() -> usize {
         }
     }
     unreachable!("Not found");
-}
-
-pub fn solve_short() {
-    println!("Packet found starting at {}", solve_short_impl::<4>());
-    println!("Message found starting at {}", solve_short_impl::<14>());
 }

@@ -2,6 +2,11 @@ use std::collections::HashSet;
 
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    println!("Visited by 2 knots: {}", solve_impl::<2>());
+    println!("Visited by 10 knots: {}", solve_impl::<10>());
+}
+
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct Coord {
     x: i32,
@@ -13,7 +18,7 @@ fn solve_impl<const N: usize>() -> usize {
     let mut visited: HashSet<Coord> = HashSet::new();
     visited.insert(knots[N - 1]); // Be sure to include initial position!
 
-    for line in iterate_file_lines("day9input.txt") {
+    for line in iterate_file_lines("day09input.txt") {
         let (direction, num_steps) = line.split_once(' ').expect("Malformed line");
         let direction = direction.chars().next().expect("Malformed direction");
         let num_steps = num_steps.parse::<usize>().expect("Malformed step count");
@@ -55,9 +60,4 @@ fn solve_impl<const N: usize>() -> usize {
     }
 
     visited.len()
-}
-
-pub fn solve() {
-    println!("Visited by 2 knots: {}", solve_impl::<2>());
-    println!("Visited by 10 knots: {}", solve_impl::<10>());
 }

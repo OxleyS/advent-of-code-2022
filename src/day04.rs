@@ -1,6 +1,11 @@
 use crate::helpers::iterate_file_lines;
 use std::cmp::Ordering;
 
+pub fn solve() {
+    solve_part1();
+    solve_part2();
+}
+
 struct Range {
     start: usize,
     end: usize,
@@ -23,10 +28,10 @@ fn has_overlap(a: Range, b: Range) -> bool {
     a.start <= b.end && a.end >= b.start
 }
 
-pub fn solve_part1() {
+fn solve_part1() {
     let mut num_contained = 0;
 
-    for line in iterate_file_lines("day4input.txt") {
+    for line in iterate_file_lines("day04input.txt") {
         let (a_str, b_str) = line.split_once(',').expect("Malformed line");
         let (a_range, b_range) = (parse_range(a_str), parse_range(b_str));
 
@@ -38,10 +43,10 @@ pub fn solve_part1() {
     println!("Total is {num_contained}");
 }
 
-pub fn solve_part2() {
+fn solve_part2() {
     let mut num_contained = 0;
 
-    for line in iterate_file_lines("day4input.txt") {
+    for line in iterate_file_lines("day04input.txt") {
         let (a_str, b_str) = line.split_once(',').expect("Malformed line");
         let (a_range, b_range) = (parse_range(a_str), parse_range(b_str));
 

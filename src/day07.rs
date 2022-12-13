@@ -1,5 +1,11 @@
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    let directory_tree = traverse_command_history();
+    println!("Sum is {}", sum_small_sizes(&directory_tree));
+    println!("Smallest deletion is {}", find_deletion_candidate_size(&directory_tree));
+}
+
 struct Directory {
     name: String,
     local_file_total: usize,
@@ -72,7 +78,7 @@ fn list_directory(
 }
 
 fn traverse_command_history() -> Vec<Directory> {
-    let mut lines = iterate_file_lines("day7input.txt");
+    let mut lines = iterate_file_lines("day07input.txt");
 
     // Populate the root directory immediately
     let mut directory_tree = vec![Directory {
@@ -149,10 +155,4 @@ fn find_deletion_candidate_size(directory_tree: &[Directory]) -> usize {
     }
 
     recurse(directory_tree, 0, left_to_free).expect("No suitable directory")
-}
-
-pub fn solve() {
-    let directory_tree = traverse_command_history();
-    println!("Sum is {}", sum_small_sizes(&directory_tree));
-    println!("Smallest deletion is {}", find_deletion_candidate_size(&directory_tree));
 }

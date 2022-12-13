@@ -2,18 +2,6 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::helpers::iterate_file_lines;
 
-struct GridNode {
-    cost_estimate: usize,
-    edge_indices: Vec<usize>,
-}
-
-#[derive(Clone)]
-struct PathNode {
-    grid_idx: usize,
-    shortest_len: usize,
-    cost_estimate: usize,
-}
-
 pub fn solve() {
     const LOWEST_ELEVATION: u8 = 97; // 'a'
     const HIGHEST_ELEVATION: u8 = 122; // 'z'
@@ -59,6 +47,18 @@ pub fn solve() {
         .min()
         .unwrap();
     println!("Shortest path length from any lowest point is {shortest_from_all_lowest}");
+}
+
+struct GridNode {
+    cost_estimate: usize,
+    edge_indices: Vec<usize>,
+}
+
+#[derive(Clone)]
+struct PathNode {
+    grid_idx: usize,
+    shortest_len: usize,
+    cost_estimate: usize,
 }
 
 fn build_graph(elevations: &[u8], grid_width: usize, end_idx: usize) -> Vec<GridNode> {

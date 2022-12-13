@@ -1,5 +1,30 @@
 use crate::helpers::iterate_file_lines;
 
+pub fn solve() {
+    let mut state = State::new();
+
+    for line in iterate_file_lines("day10input.txt") {
+        match line.as_str() {
+            "noop" => state.do_noop(),
+            s if s.starts_with("addx") && s.len() >= 6 => {
+                let num = s[5..].parse::<i32>().expect("Malformed addx");
+                state.do_addx(num);
+            }
+            _ => panic!("Malformed input"),
+        }
+    }
+
+    println!("Sum is {}", state.sum);
+    println!("Screen contents:");
+    let screen_lines = state
+        .screen
+        .iter()
+        .map(|row| row.iter().map(|&lit| if lit { '#' } else { '.' }).collect::<String>());
+    for line in screen_lines {
+        println!("{line}");
+    }
+}
+
 const SCREEN_WIDTH: usize = 40;
 const SCREEN_HEIGHT: usize = 6;
 
@@ -37,30 +62,5 @@ impl State {
 
         let pixel_lit = (x_pos - self.reg).abs() <= 1;
         self.screen[y_pos as usize][x_pos as usize] = pixel_lit;
-    }
-}
-
-pub fn solve() {
-    let mut state = State::new();
-
-    for line in iterate_file_lines("day10input.txt") {
-        match line.as_str() {
-            "noop" => state.do_noop(),
-            s if s.starts_with("addx") && s.len() >= 6 => {
-                let num = s[5..].parse::<i32>().expect("Malformed addx");
-                state.do_addx(num);
-            }
-            _ => panic!("Malformed input"),
-        }
-    }
-
-    println!("Sum is {}", state.sum);
-    println!("Screen contents:");
-    let screen_lines = state
-        .screen
-        .iter()
-        .map(|row| row.iter().map(|&lit| if lit { '#' } else { '.' }).collect::<String>());
-    for line in screen_lines {
-        println!("{line}");
     }
 }
