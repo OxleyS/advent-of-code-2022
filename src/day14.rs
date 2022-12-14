@@ -22,6 +22,8 @@ struct BoundingBox {
     down: usize,
 }
 
+const SAND_START: Coord = Coord { x: 500, y: 0 };
+
 pub fn solve() {
     let paths = parse_paths();
     let bbox = calc_bounding_box(&paths);
@@ -35,11 +37,22 @@ pub fn solve() {
 
     // Part 2
     {
-        // Expand the bounding box to open up more blank space on the sides and bottom
+        // Expand the bounding box to open up more blank space on the sides and bottom.
+        // Now that we have a floor for sand to pile up on, we'll need to account for the max width
+        // a sand pile could take up. The largest pile of sand possible is centered at the sand
+        // source and goes all the way to the floor. In this case, a triangle is formed, and the
+        // width is two times the height. Also add one extra so the sand simulation doesn't see
+        // abyss before attempting (in vain) to go diagonally
+        const EXTRA_HEIGHT: usize = 2;
+        let worst_case_sand_width = bbox.down + EXTRA_HEIGHT + 1;
+        let min_x = SAND_START.x.saturating_sub(worst_case_sand_width);
+        let max_x = SAND_START.x.saturating_add(worst_case_sand_width);
+
+        // Take care that this recalculation doesn't take away space where rocks need to go
         let mut bbox = bbox;
-        bbox.left = bbox.left.saturating_sub(200);
-        bbox.right = bbox.right.saturating_add(200);
-        bbox.down += 2;
+        bbox.left = bbox.left.min(min_x);
+        bbox.right = bbox.right.max(max_x);
+        bbox.down += EXTRA_HEIGHT;
 
         // Add a path for the floor
         let mut paths = paths;
@@ -125,7 +138,7 @@ fn simulate_sand(grid: &mut [Vec<TileType>], bbox: &BoundingBox) -> usize {
     // TODO: If I wanted to be clever, I could reverse the X and Y directions so we're not jumping
     // between slices all the time
     let grid_width = grid[0].len();
-    let sand_start = Coord { x: 500 - bbox.left, y: 0 };
+    let sand_start = Coord { x: SAND_START.x - bbox.left, y: SAND_START.y };
     let mut rest_units = 0;
 
     // Until the sand source is blocked
