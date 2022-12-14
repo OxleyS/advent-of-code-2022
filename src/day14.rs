@@ -9,7 +9,7 @@ enum TileType {
     Sand,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Coord {
     x: usize,
     y: usize,
@@ -54,46 +54,32 @@ pub fn solve() {
     // Add one in each dimension because path ends are inclusive
     let grid_width = bbox.right - bbox.left + 1;
     let mut grid: Vec<Vec<TileType>> = vec![vec![TileType::Open; grid_width]; bbox.down + 1];
-    for [start, end] in paths.iter().flat_map(|path| path.as_slice().array_windows()) {
-        let mut offset_start_x = start.x - bbox.left;
+    for [mut start, mut end] in
+        paths.iter().flat_map(|path| path.as_slice().array_windows().copied())
+    {
+        start.x -= bbox.left;
+        end.x -= bbox.left;
 
         if start.x == end.x {
             // Vertical (range may be backwards)
-            let mut start_y = start.y;
-            let mut end_y = end.y;
-            if start_y > end_y {
-                swap(&mut start_y, &mut end_y);
+            if start.y > end.y {
+                swap(&mut start.y, &mut end.y);
             }
 
             #[allow(clippy::needless_range_loop)]
-            for y in start_y..=end_y {
-                grid[y][offset_start_x] = TileType::Rock;
+            for y in start.y..=end.y {
+                grid[y][start.x] = TileType::Rock;
             }
         } else {
             // Horizontal (range may be backwards)
-            let mut offset_end_x = end.x - bbox.left;
-            if offset_start_x > offset_end_x {
-                swap(&mut offset_start_x, &mut offset_end_x);
+            if start.x > end.x {
+                swap(&mut start.x, &mut end.x);
             }
 
-            for x in offset_start_x..=offset_end_x {
+            for x in start.x..=end.x {
                 grid[start.y][x] = TileType::Rock;
             }
         }
-    }
-
-    println!("Before");
-    for line in grid.iter() {
-        println!(
-            "{}",
-            line.iter()
-                .map(|b| match b {
-                    TileType::Open => '.',
-                    TileType::Rock => '#',
-                    TileType::Sand => 'o',
-                })
-                .collect::<String>()
-        );
     }
 
     // TODO: If I wanted to be clever, I could reverse the X and Y directions so we're not jumping
@@ -136,7 +122,11 @@ pub fn solve() {
         }
     }
 
-    println!("After");
+    println!("Units of sand that came to rest: {rest_units}");
+}
+
+// For debugging
+fn print_grid(grid: &[Vec<TileType>]) {
     for line in grid.iter() {
         println!(
             "{}",
@@ -149,8 +139,4 @@ pub fn solve() {
                 .collect::<String>()
         );
     }
-
-    println!("L {}, R {}, U {}, D {}", bbox.left, bbox.right, bbox.up, bbox.down);
-
-    println!("Units of sand that came to rest: {rest_units}");
 }
