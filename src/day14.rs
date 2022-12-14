@@ -23,7 +23,39 @@ struct BoundingBox {
 }
 
 pub fn solve() {
-    let paths: Vec<Vec<Coord>> = iterate_file_lines("day14input.txt")
+    let paths = parse_paths();
+    let bbox = calc_bounding_box(&paths);
+
+    // Part 1
+    {
+        let mut grid = construct_grid(&paths, &bbox);
+        let rest_before_abyss = simulate_sand(&mut grid, &bbox);
+        println!("Units of sand that came to rest before the abyss: {rest_before_abyss}");
+    }
+
+    // Part 2
+    {
+        // Expand the bounding box to open up more blank space on the sides and bottom
+        let mut bbox = bbox;
+        bbox.left = bbox.left.saturating_sub(200);
+        bbox.right = bbox.right.saturating_add(200);
+        bbox.down += 2;
+
+        // Add a path for the floor
+        let mut paths = paths;
+        paths.push(vec![
+            Coord { x: bbox.left, y: bbox.down },
+            Coord { x: bbox.right, y: bbox.down },
+        ]);
+
+        let mut grid = construct_grid(&paths, &bbox);
+        let rest_before_abyss = simulate_sand(&mut grid, &bbox);
+        println!("Units of sand that came to rest before source block: {rest_before_abyss}");
+    }
+}
+
+fn parse_paths() -> Vec<Vec<Coord>> {
+    iterate_file_lines("day14input.txt")
         .map(|line| {
             line.split(" -> ")
                 .map(|coord| {
@@ -35,10 +67,12 @@ pub fn solve() {
                 })
                 .collect()
         })
-        .collect();
+        .collect()
+}
 
-    // Calculate a bounding box that contains all the points
-    let bbox = paths.iter().flat_map(|inner| inner.iter()).fold(
+// Calculate a bounding box that contains all the points
+fn calc_bounding_box(paths: &[Vec<Coord>]) -> BoundingBox {
+    paths.iter().flat_map(|inner| inner.iter()).fold(
         BoundingBox { left: usize::MAX, right: 0, up: usize::MAX, down: 0 },
         |bbox, coord| BoundingBox {
             left: bbox.left.min(coord.x),
@@ -46,14 +80,16 @@ pub fn solve() {
             up: bbox.up.min(coord.y),
             down: bbox.down.max(coord.y),
         },
-    );
+    )
+}
 
-    // Construct a grid that fits the bounding box. Note that we ignore the lower Y bound because it
-    // must be zero to support the sand source
-    // Each tile is a bool that says whether it's occupied by rock or sand.
-    // Add one in each dimension because path ends are inclusive
+// Construct a grid that fits the bounding box. Note that we ignore the lower Y bound because it
+// must be zero to support the sand source.
+// Add one in each dimension because path ends are inclusive
+fn construct_grid(paths: &[Vec<Coord>], bbox: &BoundingBox) -> Vec<Vec<TileType>> {
     let grid_width = bbox.right - bbox.left + 1;
     let mut grid: Vec<Vec<TileType>> = vec![vec![TileType::Open; grid_width]; bbox.down + 1];
+
     for [mut start, mut end] in
         paths.iter().flat_map(|path| path.as_slice().array_windows().copied())
     {
@@ -82,47 +118,65 @@ pub fn solve() {
         }
     }
 
+    grid
+}
+
+fn simulate_sand(grid: &mut [Vec<TileType>], bbox: &BoundingBox) -> usize {
     // TODO: If I wanted to be clever, I could reverse the X and Y directions so we're not jumping
     // between slices all the time
-    let sand_x = 500 - bbox.left;
+    let grid_width = grid[0].len();
+    let sand_start = Coord { x: 500 - bbox.left, y: 0 };
     let mut rest_units = 0;
-    'outer: loop {
-        let mut sand_pos = Coord { x: sand_x, y: 0 };
-        'inner: loop {
+
+    // Until the sand source is blocked
+    'emit_loop: while grid[sand_start.y][sand_start.x] != TileType::Sand {
+        let mut sand_pos = sand_start;
+        'fall_loop: loop {
+            // Reached the abyss?
             if sand_pos.y == bbox.down {
-                break 'outer;
+                break 'emit_loop;
             }
+
+            // Straight down
             if grid[sand_pos.y + 1][sand_pos.x] == TileType::Open {
                 sand_pos.y += 1;
                 continue;
             }
 
+            // Reached the left side abyss?
+            // Don't test until we attempt to move down left
             if sand_pos.x == 0 {
-                break 'outer;
+                break 'emit_loop;
             }
+
+            // Down left
             if grid[sand_pos.y + 1][sand_pos.x - 1] == TileType::Open {
                 sand_pos.x -= 1;
                 sand_pos.y += 1;
                 continue;
             }
 
+            // Reached the right side abyss?
+            // Don't test until we attempt to move down right
             if sand_pos.x == grid_width - 1 {
-                break 'outer;
+                break 'emit_loop;
             }
 
+            // Down right
             if grid[sand_pos.y + 1][sand_pos.x + 1] == TileType::Open {
                 sand_pos.x += 1;
                 sand_pos.y += 1;
                 continue;
             }
 
+            // Can't move anywhere, rest the sand here
             grid[sand_pos.y][sand_pos.x] = TileType::Sand;
             rest_units += 1;
-            break 'inner;
+            break 'fall_loop;
         }
     }
 
-    println!("Units of sand that came to rest: {rest_units}");
+    rest_units
 }
 
 // For debugging
