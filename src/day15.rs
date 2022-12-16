@@ -44,9 +44,9 @@ pub fn solve() {
     let num_positions = solve_part1(part1_row, &sensors, &beacons);
     println!("{num_positions} positions cannot contain a beacon on row {part1_row}");
 
-    let part2_range = 0..4000001; // Test: 21, Actual: 4000001
-    let tuning_freq = solve_part2(&sensors, part2_range).expect("No position found");
-    println!("Tuning frequency: {tuning_freq}");
+    // let part2_range = 0..4000001; // Test: 21, Actual: 4000001
+    // let tuning_freq = solve_part2(&sensors, part2_range).expect("No position found");
+    // println!("Tuning frequency: {tuning_freq}");
 }
 
 fn parse_coord(s: &str) -> Coord {
@@ -62,30 +62,28 @@ fn manhattan_distance(a: &Coord, b: &Coord) -> i32 {
 }
 
 fn solve_part1(y: i32, sensors: &[Sensor], beacons: &[Coord]) -> usize {
-    let (min_x, max_x) = sensors
+    let mut ranges: Vec<std::ops::Range<i32>> = Vec::new();
+
+    for sensor in sensors {
+        let from_row: i32 = sensor.manhattan - (y.abs_diff(sensor.pos.y) as i32);
+        if from_row >= 0 {
+            ranges.push((sensor.pos.x - from_row)..(sensor.pos.x + from_row + 1));
+        }
+    }
+
+    ranges.sort_unstable_by(|a, b| a.start.cmp(&b.start));
+    let (total, _) = ranges.iter().fold((0usize, i32::MIN), |(total, last_x_end), x_range| {
+        let disjoint_range = x_range.start.max(last_x_end)..x_range.end.max(last_x_end);
+        let disjoint_size = (disjoint_range.end - disjoint_range.start) as usize;
+        (total + disjoint_size, disjoint_range.end)
+    });
+
+    let row_beacons = beacons
         .iter()
-        .filter_map(|sensor| {
-            let from_row: i32 = sensor.manhattan - (y - sensor.pos.y);
-            if from_row < 0 {
-                return None;
-            }
-            Some((sensor.pos.x - from_row, sensor.pos.x + from_row))
-        })
-        .fold((i32::MAX, i32::MIN), |accum, elem| (accum.0.min(elem.0), accum.1.max(elem.1)));
+        .filter(|beacon| beacon.y == y && ranges.iter().any(|r| r.contains(&beacon.x)))
+        .count();
 
-    dbg!(min_x, max_x);
-
-    (min_x..=max_x)
-        .into_iter()
-        .filter(|&x| {
-            let cur = Coord { x, y };
-            if beacons.contains(&cur) {
-                return false;
-            }
-
-            sensors.iter().any(|sensor| manhattan_distance(&cur, &sensor.pos) <= sensor.manhattan)
-        })
-        .count()
+    total - row_beacons
 }
 
 #[derive(Debug, Clone)]
