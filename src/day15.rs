@@ -1,15 +1,14 @@
 use crate::helpers::iterate_file_lines;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 struct Coord {
     x: i32,
     y: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Sensor {
     pos: Coord,
-    beacon_idx: usize,
     manhattan: i32,
 }
 
@@ -32,12 +31,10 @@ pub fn solve() {
         let beacon_coord = parse_coord(beacon_coord_str);
         let manhattan = manhattan_distance(&sensor_coord, &beacon_coord);
 
-        let beacon_idx = beacons.iter().position(|c| beacon_coord == *c).unwrap_or_else(|| {
-            beacons.push(beacon_coord);
-            beacons.len() - 1
-        });
-
-        sensors.push(Sensor { pos: sensor_coord, beacon_idx, manhattan });
+        if !beacons.contains(&beacon_coord) {
+            beacons.push(beacon_coord)
+        }
+        sensors.push(Sensor { pos: sensor_coord, manhattan });
     }
 
     let part1_row = 2000000; // Test: 10, Actual: 2000000
@@ -64,6 +61,7 @@ fn manhattan_distance(a: &Coord, b: &Coord) -> i32 {
 fn solve_part1(y: i32, sensors: &[Sensor], beacons: &[Coord]) -> usize {
     let mut ranges: Vec<std::ops::Range<i32>> = Vec::new();
 
+    // Calculate the ranges that sensors extend onto this row
     for sensor in sensors {
         let from_row: i32 = sensor.manhattan - (y.abs_diff(sensor.pos.y) as i32);
         if from_row >= 0 {
@@ -93,30 +91,37 @@ fn solve_part2(sensors: &[Sensor], full_range: std::ops::Range<i32>) -> Option<i
         ((x as isize) * 4000000) + (y as isize)
     }
 
+    // Sort the sensors by X to maximize the chance that the ranges are already sorted
+    let mut sensors = sensors.to_vec();
+    sensors.sort_by(|a, b| a.pos.x.cmp(&b.pos.x));
+
+    // This Vec is reused to avoid per-iteration allocation
+    let mut ranges: Vec<std::ops::Range<i32>> = Vec::with_capacity(sensors.len());
+
     let expected_end = full_range.end;
     for y in full_range {
-        if y % 100000 == 0 {
-            println!("At y = {y}");
-        }
-
-        let mut ranges: Vec<std::ops::Range<i32>> = Vec::with_capacity(sensors.len());
-
-        for sensor in sensors {
+        // Calculate the ranges that sensors extend onto this row
+        for sensor in sensors.iter() {
             let from_row: i32 = sensor.manhattan - (y.abs_diff(sensor.pos.y) as i32);
             if from_row >= 0 {
                 ranges.push((sensor.pos.x - from_row)..(sensor.pos.x + from_row + 1));
             }
         }
 
-        ranges.sort_unstable_by(|a, b| a.start.cmp(&b.start));
+        // sort_by performs better than sort_unstable_by on nearly-sorted slices
+        // TODO: This is the slowest part of the loop, can this be optimized?
+        ranges.sort_by(|a, b| a.start.cmp(&b.start));
+
+        // Look for gaps, gaps should only be one element large
         let mut last_end_x = 0;
-        for range in ranges {
+        for range in ranges.drain(..) {
             if range.start == last_end_x + 1 {
                 return Some(calc_tuning_freq(last_end_x, y));
             }
             last_end_x = last_end_x.max(range.end);
         }
 
+        // Also look for gaps at the end
         if last_end_x < expected_end {
             return Some(calc_tuning_freq(expected_end, y));
         }
