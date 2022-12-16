@@ -44,9 +44,9 @@ pub fn solve() {
     let num_positions = solve_part1(part1_row, &sensors, &beacons);
     println!("{num_positions} positions cannot contain a beacon on row {part1_row}");
 
-    // let part2_range = 0..4000001; // Test: 21, Actual: 4000001
-    // let tuning_freq = solve_part2(&sensors, part2_range).expect("No position found");
-    // println!("Tuning frequency: {tuning_freq}");
+    let part2_range = 0..4000001; // Test: 21, Actual: 4000001
+    let tuning_freq = solve_part2(&sensors, part2_range).expect("No position found");
+    println!("Tuning frequency: {tuning_freq}");
 }
 
 fn parse_coord(s: &str) -> Coord {
@@ -71,6 +71,7 @@ fn solve_part1(y: i32, sensors: &[Sensor], beacons: &[Coord]) -> usize {
         }
     }
 
+    // Collapse the ranges into a count, taking care of overlap between ranges
     ranges.sort_unstable_by(|a, b| a.start.cmp(&b.start));
     let (total, _) = ranges.iter().fold((0usize, i32::MIN), |(total, last_x_end), x_range| {
         let disjoint_range = x_range.start.max(last_x_end)..x_range.end.max(last_x_end);
@@ -78,6 +79,7 @@ fn solve_part1(y: i32, sensors: &[Sensor], beacons: &[Coord]) -> usize {
         (total + disjoint_size, disjoint_range.end)
     });
 
+    // Find the beacons that are actually on this row - they don't count as "cannot have beacon"
     let row_beacons = beacons
         .iter()
         .filter(|beacon| beacon.y == y && ranges.iter().any(|r| r.contains(&beacon.x)))
@@ -86,88 +88,37 @@ fn solve_part1(y: i32, sensors: &[Sensor], beacons: &[Coord]) -> usize {
     total - row_beacons
 }
 
-#[derive(Debug, Clone)]
-struct Box {
-    x: std::ops::Range<i32>,
-    y: std::ops::Range<i32>,
-}
-
 fn solve_part2(sensors: &[Sensor], full_range: std::ops::Range<i32>) -> Option<isize> {
-    let mut boxes = vec![Box { x: full_range.clone(), y: full_range }];
-    for sensor in sensors {
-        let half_size = (((sensor.manhattan + 1) / 2) - 1).max(0);
-        let contained_square = Box {
-            x: (sensor.pos.x - (half_size - 1))..(sensor.pos.x + half_size),
-            y: (sensor.pos.y - (half_size - 1))..(sensor.pos.y + half_size),
-        };
+    fn calc_tuning_freq(x: i32, y: i32) -> isize {
+        ((x as isize) * 4000000) + (y as isize)
+    }
 
-        dbg!(half_size);
+    let expected_end = full_range.end;
+    for y in full_range {
+        if y % 100000 == 0 {
+            println!("At y = {y}");
+        }
 
-        let mut new_boxes = Vec::<Box>::new();
-        for cur_box in boxes.iter() {
-            // Disregard the non-intersecting cases
-            if contained_square.y.end <= cur_box.y.start
-                || contained_square.y.start >= cur_box.y.end
-                || contained_square.x.end <= cur_box.x.start
-                || contained_square.x.start >= cur_box.x.end
-            {
-                new_boxes.push(cur_box.clone());
-                continue;
-            }
+        let mut ranges: Vec<std::ops::Range<i32>> = Vec::with_capacity(sensors.len());
 
-            let intersect_y = contained_square.y.start.max(cur_box.y.start)
-                ..contained_square.y.end.min(cur_box.y.end);
-            let intersect_x = contained_square.x.start.max(cur_box.x.start)
-                ..contained_square.x.end.min(cur_box.x.end);
-
-            if intersect_y.start > cur_box.y.start {
-                // Add top box
-                new_boxes.push(Box { x: cur_box.x.clone(), y: cur_box.y.start..intersect_y.start });
-            }
-
-            if intersect_y.end < cur_box.y.end {
-                // Add bottom box
-                new_boxes.push(Box { x: cur_box.x.clone(), y: intersect_y.end..cur_box.y.end });
-            }
-
-            if intersect_x.start > cur_box.x.start {
-                // Add left box
-                new_boxes
-                    .push(Box { x: cur_box.x.start..intersect_x.start, y: intersect_y.clone() });
-            }
-
-            if intersect_x.end < cur_box.x.end {
-                // Add right box
-                new_boxes.push(Box { x: intersect_x.end..cur_box.x.end, y: intersect_y.clone() });
+        for sensor in sensors {
+            let from_row: i32 = sensor.manhattan - (y.abs_diff(sensor.pos.y) as i32);
+            if from_row >= 0 {
+                ranges.push((sensor.pos.x - from_row)..(sensor.pos.x + from_row + 1));
             }
         }
 
-        boxes = new_boxes;
-    }
-
-    println!(
-        "Searching {} positions instead of {}",
-        boxes
-            .iter()
-            .map(|b| ((b.x.end - b.x.start - 1) as usize * (b.y.end - b.y.start - 1) as usize))
-            .sum::<usize>(),
-        4000000usize * 4000000usize,
-    );
-
-    //dbg!(&boxes);
-
-    for cur_box in boxes {
-        for y in cur_box.y.clone() {
-            for x in cur_box.x.clone() {
-                let cur = Coord { x, y };
-                if sensors
-                    .iter()
-                    .all(|sensor| manhattan_distance(&cur, &sensor.pos) > sensor.manhattan)
-                {
-                    let tuning_freq: isize = ((x as isize) * 4000000) + (y as isize);
-                    return Some(tuning_freq);
-                }
+        ranges.sort_unstable_by(|a, b| a.start.cmp(&b.start));
+        let mut last_end_x = 0;
+        for range in ranges {
+            if range.start == last_end_x + 1 {
+                return Some(calc_tuning_freq(last_end_x, y));
             }
+            last_end_x = last_end_x.max(range.end);
+        }
+
+        if last_end_x < expected_end {
+            return Some(calc_tuning_freq(expected_end, y));
         }
     }
 
