@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::helpers::iterate_file_lines;
 
 struct UnresolvedValve {
@@ -14,8 +16,11 @@ struct Valve {
 
 pub fn solve() {
     let (valves, start_idx) = parse_valves();
+    let start_time = Instant::now();
     let max_pressure = solve_part1(&valves, start_idx);
+    let time_taken = Instant::elapsed(&start_time);
     println!("Max releasable pressure is {max_pressure}");
+    println!("Took {} seconds", time_taken.as_secs_f32());
 }
 
 fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
@@ -26,12 +31,12 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
         cur_valve: usize,
         prev_valve: usize,
         minutes: usize,
-        valves_open: &[bool],
+        valves_open: &mut [bool],
     ) -> usize {
         let valve = &valves[cur_valve];
         let cur_released = cur_released + release_rate;
         if minutes == 1 {
-            // One minute left, might as well open up the valve here
+            // One minute left, nothing else to do
             return cur_released;
         }
 
@@ -54,28 +59,26 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
             .max()
             .unwrap_or(cur_released);
 
-        // Or they can open this valve if there's a point
-        let best_score = if valve.flow_rate != 0 && !valves_open[cur_valve] {
-            let mut with_opened = valves_open.to_vec();
-            with_opened[cur_valve] = true;
-            recurse(
-                valves,
-                cur_released,
-                release_rate + valve.flow_rate,
-                cur_valve,
-                cur_valve,
-                minutes - 1,
-                &with_opened,
-            )
-            .max(best_tunnel)
-        } else {
-            best_tunnel
-        };
+        // If there's no point opening this valve, or we can't, don't bother
+        if valve.flow_rate == 0 || valves_open[cur_valve] {
+            return best_tunnel;
+        }
 
-        best_score
+        valves_open[cur_valve] = true;
+        let best_if_opened = recurse(
+            valves,
+            cur_released,
+            release_rate + valve.flow_rate,
+            cur_valve,
+            cur_valve,
+            minutes - 1,
+            valves_open,
+        );
+        valves_open[cur_valve] = false;
+        best_if_opened.max(best_tunnel)
     }
 
-    recurse(valves, 0, 0, start_idx, start_idx, 30, &vec![false; valves.len()])
+    recurse(valves, 0, 0, start_idx, start_idx, 30, &mut vec![false; valves.len()])
 }
 
 fn parse_valves() -> (Vec<Valve>, usize) {
