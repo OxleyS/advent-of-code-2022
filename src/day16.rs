@@ -2,10 +2,15 @@ use std::time::Instant;
 
 use crate::helpers::iterate_file_lines;
 
+struct UnresolvedTunnel {
+    dest_valve: String,
+    minutes: usize,
+}
+
 struct UnresolvedValve {
     valve_name: String,
     flow_rate: usize,
-    tunnels: Vec<String>,
+    tunnels: Vec<UnresolvedTunnel>,
 }
 
 #[derive(Debug)]
@@ -249,7 +254,7 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
 // }
 
 fn parse_valves() -> (Vec<Valve>, usize) {
-    let unresolved_valves: Vec<UnresolvedValve> = iterate_file_lines("day16input.txt")
+    let mut unresolved_valves: Vec<UnresolvedValve> = iterate_file_lines("day16input.txt")
         .map(|line| {
             let (valve_str, tunnels_str) = line.split_once(';').expect("Malformed line");
             let (start, flow_rate_str) = valve_str.split_once('=').expect("Malformed flow section");
@@ -259,15 +264,23 @@ fn parse_valves() -> (Vec<Valve>, usize) {
             let flow_rate = flow_rate_str.parse::<usize>().expect("Malformed flow rate");
 
             let tunnels_start = &tunnels_str[" tunnels lead to ".len()..];
-            let tunnels: Vec<String> = if tunnels_start.starts_with("valves") {
-                tunnels_start["valves ".len()..].split(", ").map(|s| s.to_string()).collect()
+            let tunnels: Vec<UnresolvedTunnel> = if tunnels_start.starts_with("valves") {
+                tunnels_start["valves ".len()..]
+                    .split(", ")
+                    .map(|s| UnresolvedTunnel { dest_valve: s.to_string(), minutes: 1 })
+                    .collect()
             } else {
-                vec![tunnels_start["valve ".len()..].to_string()]
+                vec![UnresolvedTunnel {
+                    dest_valve: tunnels_start["valve ".len()..].to_string(),
+                    minutes: 1,
+                }]
             };
 
             UnresolvedValve { valve_name, flow_rate, tunnels }
         })
         .collect();
+
+    reduce_valves(&mut unresolved_valves);
 
     let valves = unresolved_valves
         .iter()
@@ -275,12 +288,12 @@ fn parse_valves() -> (Vec<Valve>, usize) {
             let tunnels = unresolved
                 .tunnels
                 .iter()
-                .map(|name| {
+                .map(|tunnel| {
                     let dest_idx = unresolved_valves
                         .iter()
-                        .position(|v| v.valve_name == *name)
+                        .position(|v| v.valve_name == tunnel.dest_valve)
                         .expect("Bad valve reference");
-                    Tunnel { dest_idx, minutes: 1 }
+                    Tunnel { dest_idx, minutes: tunnel.minutes }
                 })
                 .collect();
             Valve { flow_rate: unresolved.flow_rate, tunnels }
@@ -291,4 +304,33 @@ fn parse_valves() -> (Vec<Valve>, usize) {
         unresolved_valves.iter().position(|v| v.valve_name == "AA").expect("Start valve missing");
 
     (valves, start_idx)
+}
+
+fn reduce_valves(valves: &mut Vec<UnresolvedValve>) {
+    let mut i = 0;
+    while i < valves.len() {
+        if valves[i].flow_rate != 0 || valves[i].valve_name == "AA" {
+            i += 1;
+            continue;
+        }
+
+        let removed = valves.swap_remove(i);
+        for valve in valves.iter_mut() {
+            let Some(tunnel_idx) = valve.tunnels.iter().position(|t| t.dest_valve == removed.valve_name) else {
+                continue;
+            };
+
+            let prev_minutes = valve.tunnels.swap_remove(tunnel_idx).minutes;
+            for new_valve in removed.tunnels.iter() {
+                if new_valve.dest_valve != valve.valve_name
+                    && !valve.tunnels.iter().any(|t| t.dest_valve == new_valve.dest_valve)
+                {
+                    valve.tunnels.push(UnresolvedTunnel {
+                        dest_valve: new_valve.dest_valve.clone(),
+                        minutes: prev_minutes + new_valve.minutes,
+                    });
+                }
+            }
+        }
+    }
 }
