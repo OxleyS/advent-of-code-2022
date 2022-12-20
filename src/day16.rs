@@ -34,7 +34,6 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
     fn recurse(
         valves: &[Valve],
         cur_released: usize,
-        release_rate: usize,
         cur_valve: usize,
         prev_valve: usize,
         minutes: usize,
@@ -42,10 +41,9 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
         num_open: usize,
     ) -> usize {
         let valve = &valves[cur_valve];
-        let cur_released = cur_released + release_rate;
-        if minutes == 1 || num_open == valves.len() {
+        if minutes <= 1 || num_open == valves.len() {
             // Nothing else to do
-            return cur_released + (release_rate * (minutes - 1));
+            return cur_released;
         }
 
         // They can go to another valve, but no point doubling back without doing anything
@@ -54,16 +52,7 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
             .iter()
             .filter(|&&idx| idx != prev_valve)
             .map(|idx| {
-                recurse(
-                    valves,
-                    cur_released,
-                    release_rate,
-                    *idx,
-                    cur_valve,
-                    minutes - 1,
-                    valves_open,
-                    num_open,
-                )
+                recurse(valves, cur_released, *idx, cur_valve, minutes - 1, valves_open, num_open)
             })
             .max()
             .unwrap_or(cur_released);
@@ -74,10 +63,10 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
         }
 
         valves_open[cur_valve] = true;
+        let new_released = cur_released + (valve.flow_rate * minutes.saturating_sub(1));
         let best_if_opened = recurse(
             valves,
-            cur_released,
-            release_rate + valve.flow_rate,
+            new_released,
             cur_valve,
             cur_valve,
             minutes - 1,
@@ -97,7 +86,7 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
         }
     }
 
-    recurse(valves, 0, 0, start_idx, start_idx, 30, &mut valves_open, num_open)
+    recurse(valves, 0, start_idx, start_idx, 30, &mut valves_open, num_open)
 }
 
 fn solve_part2(valves: &[Valve], start_idx: usize) -> usize {
@@ -246,7 +235,7 @@ fn solve_part2(valves: &[Valve], start_idx: usize) -> usize {
 }
 
 fn parse_valves() -> (Vec<Valve>, usize) {
-    let unresolved_valves: Vec<UnresolvedValve> = iterate_file_lines("testinput.txt")
+    let unresolved_valves: Vec<UnresolvedValve> = iterate_file_lines("day16input.txt")
         .map(|line| {
             let (valve_str, tunnels_str) = line.split_once(';').expect("Malformed line");
             let (start, flow_rate_str) = valve_str.split_once('=').expect("Malformed flow section");
