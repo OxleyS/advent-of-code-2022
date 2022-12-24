@@ -61,14 +61,14 @@ fn solve_part1(valves: &[Valve], start_idx: usize) -> usize {
         let best_tunnel = valve
             .tunnels
             .iter()
-            .filter(|tunnel| tunnel.dest_idx != prev_valve)
+            .filter(|tunnel| tunnel.dest_idx != prev_valve && tunnel.minutes < minutes + 1)
             .map(|tunnel| {
                 recurse(
                     valves,
                     cur_released,
                     tunnel.dest_idx,
                     cur_valve,
-                    minutes.saturating_sub(tunnel.minutes),
+                    minutes - tunnel.minutes,
                     valves_open,
                     num_open,
                 )
